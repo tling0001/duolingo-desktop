@@ -550,7 +550,7 @@ Function .onInit
     Call RestorePreviousInstallLocation
     !if "${INSTALLMODE}" == "currentUser"
       ; Always offer the requested per-user Programs folder as the default, including upgrades.
-      StrCpy $INSTDIR "$LOCALAPPDATA\\Programs\\Duolingo"
+      StrCpy $INSTDIR "$LOCALAPPDATA\Programs\Duolingo"
     !endif
   ${EndIf}
 
