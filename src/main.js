@@ -19,7 +19,6 @@ const state = {
   checked: false,
   correct: 0,
   lessonDone: false,
-  sound: true,
   animations: true,
 };
 
@@ -264,7 +263,7 @@ function overlays() {
     html += `
       <div class="overlay" data-action="dismiss-overlay"><section class="modal" role="dialog" aria-modal="true">
         <div class="modal-head"><h2>Settings</h2><button data-action="close-settings" class="modal-close">×</button></div>
-        <div class="setting-row"><div><b>Sound effects</b><small>Play sounds during lessons</small></div><button class="toggle ${state.sound?"on":""}" data-action="toggle-sound"></button></div>
+        <div class="setting-row"><div><b>Lesson audio</b><small>Audio playback is not integrated in this preview</small></div><span class="setting-value">Unavailable</span></div>
         <div class="setting-row"><div><b>Animations</b><small>Show learning path animations</small></div><button class="toggle ${state.animations?"on":""}" data-action="toggle-animations"></button></div>
         <div class="setting-row"><div><b>Account</b><small>Account sign-in is not connected yet</small></div><span class="setting-value">Preview</span></div>
       </section></div>`;
@@ -296,7 +295,7 @@ function render() {
     default: content = learnScreen();
   }
   app.innerHTML = `
-    <div class="app-shell">
+    <div class="app-shell ${state.animations ? "" : "reduce-motion"}">
       ${header()}
       <div class="content-frame" key="${state.screen}">${content}</div>
       ${state.screen === "learn" ? '<button class="path-jump" data-action="jump-current" aria-label="Jump to current lesson">⌄</button>' : ""}
@@ -363,7 +362,6 @@ function bind() {
       case "guidebook": state.settings = false; state.sheet = false; state.screen = "guidebook"; break;
       case "settings": state.settings = true; break;
       case "close-settings": state.settings = false; break;
-      case "toggle-sound": state.sound = !state.sound; break;
       case "toggle-animations": state.animations = !state.animations; break;
       case "start-lesson": startLesson(); return;
       case "check-answer":
