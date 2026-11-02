@@ -673,7 +673,8 @@ function bind() {
       case "settings": state.settings = true; break;
       case "close-settings": state.settings = false; break;
       case "toggle-animations": state.animations = !state.animations; break;
-      case "login-email-mode": state.loginMode="email"; break;\n      case "login-phone-mode": state.loginMode="phone"; break;\n      case "connect-account": connectAccount(false); return;
+      case "login-email-mode": state.loginMode="email"; break;
+      case "login-phone-mode": state.loginMode="phone"; break;\n      case "connect-account": connectAccount(false); return;
       case "refresh-account": connectAccount(true); return;
       case "disconnect-account": state.accountJwt=""; state.accountSnapshot=null; state.accountError=""; break;
       case "start-lesson": startLesson(); return;
