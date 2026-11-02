@@ -250,7 +250,7 @@ function questsScreen() {
 function shopScreen() {
   const items = [
     {id:"freeze",icon:"🧊",name:"Streak Freeze",description:"Protect your streak if you miss a day.",price:200,owned:state.streakFreezes>0,ownedLabel:`${state.streakFreezes} owned`},
-    {id:"double",icon:"💎",name:"Double or Nothing",description:"Activate a gem wager challenge for your streak.",price:50,owned:state.doubleXp,ownedLabel:"Active"},
+    {id:"double",icon:"💎",name:"2× XP Boost",description:"Double the XP earned from your next completed lesson.",price:50,owned:state.doubleXp,ownedLabel:"Active"},
     {id:"hearts",icon:"❤️",name:"Heart Refill",description:"Refill your hearts so you can keep learning.",price:350,owned:state.hearts>=5,ownedLabel:"Full"},
   ];
   return `
@@ -405,7 +405,8 @@ function overlays() {
           <h2 id="sheet-title">Level ${state.selectedNode+1}</h2>
           <p>Practice greetings, introductions, and everyday phrases in this lesson.</p>
           <div class="sheet-details"><span>⚡ 10 XP</span><span>♥ 5 hearts</span><span>⏱ 3 min</span></div>
-          <button class="primary-button" data-action="start-lesson">Start +10 XP</button>
+          <button class="primary-button" data-action="start-lesson" ${state.hearts===0?"disabled":""}>${state.hearts===0?"No hearts available":"Start lesson"}</button>
+          ${state.hearts===0?'<button class="text-button" data-action="go-shop">Get hearts in the Shop</button>':""}
           <button class="text-button" data-action="close-sheet">Not now</button>
         </section>
       </div>`;
@@ -484,7 +485,6 @@ function startLesson() {
   state.answer = null;
   state.checked = false;
   state.correct = 0;
-  state.hearts = 5;
   state.lessonFailed = false;
   state.lessonDone = false;
   render();
@@ -585,6 +585,7 @@ function bind() {
       case "jump-current": app.querySelector("[data-node=\"2\"]")?.scrollIntoView({behavior:"smooth",block:"center"}); return;
       case "streak": state.screen = "profile"; state.tab = "profile"; break;
       case "gems": state.screen = "shop"; state.tab = "shop"; break;
+      case "go-shop": state.sheet=false; state.screen="shop"; state.tab="shop"; break;
       case "earn-gems": state.screen="quests"; state.tab="quests"; break;
       case "buy-freeze": case "buy-double": case "buy-hearts":
         window.alert("Choose an item in the Shop to purchase it with preview gems."); return;
