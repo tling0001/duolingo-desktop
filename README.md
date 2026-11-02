@@ -1,10 +1,31 @@
 # Duolingo Desktop
 
-A Tauri v2 desktop wrapper for the official Duolingo web experience, with automated macOS, Windows, and Linux builds.
+A Tauri v2 desktop application that is being rebuilt around the Android app's mobile learning experience.
 
-> **Implementation note:** The supplied Android ZIP is an extracted APK containing Unity/IL2CPP binaries and Android resources, not the original editable Android project. It does not contain the complete source or private service implementation needed to recreate Duolingo natively. This first version therefore opens the official website in a Tauri desktop webview, reusing Duolingo's supported web client for accounts, courses, lessons, and synced progress.
+## Current implementation
 
-The app does not collect credentials or add native access to the remote website. It uses the OS webview: WebView2 on Windows, WKWebView on macOS, and WebKitGTK on Linux. Compatibility can vary between engines.
+The frontend now contains a responsive, mobile-inspired app shell with:
+
+- Learn tab and vertically scrolling lesson path
+- Unit header, guidebook entry point, lesson and chest nodes
+- Weekly league, daily quests, shop, and profile tabs
+- Lesson question flow, answer feedback, progress, and completion screen
+- Course selector and settings sheet
+- Animated navigation, lesson transitions, and bottom sheets
+
+The Android APK extraction supplied for this project was inspected for the navigation and layout structure. In particular, `home_content.xml`, `fragment_path.xml`, `view_path_level_rive.xml`, and `view_tab_item.xml` establish the top course/status area, the scrollable learning path, path-node treatment, and five-item bottom navigation. The APK's course catalog contains 303 course identifiers.
+
+**Important:** this is an independently implemented local UI preview. It does not yet authenticate to Duolingo, read a real learner's course state, sync XP/gems/streaks, or submit lesson answers to Duolingo. Sample leaderboard, profile, currency, and lesson data are local demo data. The APK extraction contains decompiled Android classes/resources and Unity IL2CPP binaries, not the original editable Unity project or the private server implementation.
+
+## Windows install location
+
+The Windows NSIS installer is configured for a per-user install at:
+
+```text
+%LOCALAPPDATA%\Programs\Duolingo
+```
+
+A custom NSIS template is pinned to Tauri CLI v2.12.4 and changes the current-user default install directory while preserving the normal directory selection, registry, shortcut, and uninstall flow.
 
 ## Requirements
 
@@ -33,9 +54,7 @@ GitHub Actions builds on pushes to `main`, pull requests, and manual dispatches:
 | --- | --- | --- |
 | macOS Apple Silicon | `macos-15` | DMG |
 | macOS Intel | `macos-15-intel` | DMG |
-| Windows x64 | `windows-latest` | MSI and NSIS |
+| Windows x64 | `windows-latest` | NSIS EXE |
 | Linux x64 | `ubuntu-24.04` | AppImage, DEB, RPM |
 
 Installers are uploaded as workflow artifacts for 14 days. Builds are not signed or notarized, and no GitHub Release is created automatically.
-
-A fully independent native client requires an authorized API/SDK or official source repository. The APK dump does not provide the full Unity IL2CPP source, backend, or private service contracts.
