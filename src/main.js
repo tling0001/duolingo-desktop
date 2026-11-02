@@ -47,11 +47,24 @@ function persistState() {
 
 const questions = [
   { prompt: "How do you say “hello”?", hint: "Select the correct translation", answers: ["Hola", "Gracias", "Adiós", "Por favor"], correct: "Hola", note: "Hola means hello." },
-  { prompt: "Translate “the water”", hint: "Choose the Spanish phrase", answers: ["El pan", "El agua", "La leche", "El café"], correct: "El agua", note: "Agua is feminine, but uses “el” in the singular." },
-  { prompt: "Choose the correct sentence", hint: "I eat bread", answers: ["Yo bebo pan", "Yo como pan", "Yo tengo pan", "Yo quiero agua"], correct: "Yo como pan", note: "Como is the first-person form of comer (to eat)." },
+  { prompt: "What do you hear?", hint: "Listen, then choose the matching phrase", type: "listen", spoken: "El agua", answers: ["El pan", "El agua", "La leche", "El café"], correct: "El agua", note: "Agua is feminine, but uses “el” in the singular." },
+  { prompt: "Write this in Spanish", hint: "I eat bread", type: "wordbank", bank: ["Yo", "como", "pan", "bebo", "agua"], correct: "Yo como pan", note: "Como is the first-person form of comer (to eat)." },
   { prompt: "What does “gracias” mean?", hint: "Select the English meaning", answers: ["Good morning", "Please", "Thank you", "Excuse me"], correct: "Thank you", note: "Gracias means thank you." },
   { prompt: "Complete the phrase: “Buenos ___”", hint: "Good morning", answers: ["noches", "días", "tardes", "amigos"], correct: "días", note: "Buenos días is the common greeting for good morning." },
 ];
+
+function isAnswerCorrect(question = questions[state.question]) {
+  const answer = Array.isArray(state.answer) ? state.answer.join(" ") : state.answer;
+  return answer === question.correct;
+}
+
+function speakSpanish(phrase) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(phrase);
+  utterance.lang = state.course === "Japanese" ? "ja-JP" : state.course === "French" ? "fr-FR" : state.course === "German" ? "de-DE" : state.course === "Italian" ? "it-IT" : state.course === "Portuguese" ? "pt-BR" : "es-ES";
+  window.speechSynthesis.speak(utterance);
+}
 
 const icons = {
   learn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.8 12 3l9 7.8v9a1.2 1.2 0 0 1-1.2 1.2h-5.1v-6.2H9.3V21H4.2A1.2 1.2 0 0 1 3 19.8z"/></svg>',
@@ -250,10 +263,10 @@ function lessonScreen() {
       <section class="question-area">
         <div class="eyebrow">TRANSLATE THIS PHRASE</div>
         <h1>${q.prompt}</h1><p>${q.hint}</p>
-        <div class="question-illustration">${state.question===0?"👋":state.question===1?"💧":state.question===2?"🍞":state.question===3?"💬":"🌞"}</div>
-        <div class="answer-list">${q.answers.map(a=>`<button class="answer-option ${state.answer===a?"selected":""} ${state.checked&&a===q.correct?"correct":state.checked&&state.answer===a?"incorrect":""}" data-answer="${a}" ${state.checked?"disabled":""}><span class="answer-dot"></span>${a}</button>`).join("")}</div>
+        ${q.type === "listen" ? `<button class="listen-card" data-action="play-question" aria-label="Play phrase"><span>🔊</span><b>Tap to listen</b><small>Normal speed</small></button>` : ""}
+        ${q.type === "wordbank" ? `<div class="wordbank-answer" aria-label="Your answer">${(Array.isArray(state.answer)?state.answer:[]).map((word,i)=>`<button class="word-chip selected" data-remove-word="${i}" ${state.checked?"disabled":""}>${word}</button>`).join("") || `<span class="word-placeholder">Tap the words below to build your answer</span>`}</div><div class="wordbank-options">${q.bank.map((word,i)=>`<button class="word-chip" data-word="${word}" data-word-index="${i}" ${(Array.isArray(state.answer)&&state.answer.includes(word)&&q.bank.filter(x=>x===word).length===1)||state.checked?"disabled":""}>${word}</button>`).join("")}</div>` : `<div class="answer-list">${q.answers.map(a=>`<button class="answer-option ${state.answer===a?"selected":""} ${state.checked&&a===q.correct?"correct":state.checked&&state.answer===a?"incorrect":""}" data-answer="${a}" ${state.checked?"disabled":""}><span class="answer-dot"></span>${a}</button>`).join("")}</div>`}
       </section>
-      ${state.checked ? `<div class="answer-feedback ${state.answer===q.correct?"good":"bad"}"><div class="feedback-title">${state.answer===q.correct?"Excellent!":"Correct answer: "+q.correct}</div><p>${q.note}</p><button class="primary-button" data-action="next-question">${state.question===questions.length-1?"Finish lesson":"Continue"}</button></div>` :
+      ${state.checked ? `<div class="answer-feedback ${isAnswerCorrect(q)?"good":"bad"}"><div class="feedback-title">${isAnswerCorrect(q)?"Excellent!":"Correct answer: "+q.correct}</div><p>${q.note}</p><button class="primary-button" data-action="next-question">${state.question===questions.length-1?"Finish lesson":"Continue"}</button></div>` :
         `<footer class="lesson-footer"><button class="check-button" data-action="check-answer" ${state.answer===null?"disabled":""}>Check</button></footer>`}
     </main>`;
 }
@@ -379,6 +392,12 @@ function bind() {
   app.querySelectorAll("[data-answer]").forEach(el => el.addEventListener("click", () => {
     if (!state.checked) { state.answer = el.dataset.answer; render(); }
   }));
+  app.querySelectorAll("[data-word]").forEach(el => el.addEventListener("click", () => {
+    if (!state.checked) { state.answer = [...(Array.isArray(state.answer)?state.answer:[]), el.dataset.word]; render(); }
+  }));
+  app.querySelectorAll("[data-remove-word]").forEach(el => el.addEventListener("click", () => {
+    if (!state.checked) { const words = [...(Array.isArray(state.answer)?state.answer:[])]; words.splice(Number(el.dataset.removeWord),1); state.answer = words; render(); }
+  }));
   app.querySelectorAll("[data-course]").forEach(el => el.addEventListener("click", () => {
     state.course = el.dataset.course;
     state.courseFlag = el.dataset.flag;
@@ -401,7 +420,7 @@ function bind() {
       case "check-answer":
         if (state.answer !== null) {
           state.checked = true;
-          if (state.answer === questions[state.question].correct) {
+          if (isAnswerCorrect(questions[state.question])) {
             state.correct += 1;
             state.correctInRow += 1;
             state.questStreak = Math.max(state.questStreak, state.correctInRow);
@@ -427,6 +446,7 @@ function bind() {
       case "about": state.screen = "about"; break;
       case "back-learn": state.screen = "learn"; state.tab = "learn"; break;
       case "back-profile": state.screen = "profile"; state.tab = "profile"; break;
+      case "play-question": speakSpanish(questions[state.question].spoken || questions[state.question].correct); return;
       case "play-word": {
         const phrase = el.closest(".word-row")?.querySelector("b")?.textContent || "Hola";
         if ("speechSynthesis" in window) {
