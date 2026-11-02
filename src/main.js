@@ -39,6 +39,8 @@ const state = {
   accountJwt: "",
   accountBusy: false,
   accountError: "",
+  questTab: "daily",
+  profileTab: "achievements",
 };
 
 // Keep preview progress across app restarts without pretending to sync an account.
@@ -218,13 +220,24 @@ function questsScreen() {
   ].map(q=>({...q,percent:Math.min(100,q.value/q.goal*100)}));
   const completed = quests.filter(q=>q.value>=q.goal).length;
   if (completed===3 && !state.questRewardClaimed) { state.gems+=40; state.questRewardClaimed=true; }
-
+  const daily = state.questTab === "daily";
   return `
-    <main class="screen other-screen">
-      <div class="page-heading"><div class="eyebrow">DAILY GOALS</div><h1>Quests</h1><p>A little practice goes a long way.</p></div>
-      <section class="quest-summary"><div class="quest-ring"><b>${completed}</b><small>/ 3</small></div><div><b>Daily Quests</b><span>${completed===3?"All quests complete!":"Complete your quests to earn gems."}</span></div><span class="reward">◆ 40</span></section>
-      <section class="panel quest-list">${quests.map(q=>`<article class="quest-row ${q.percent===100?"quest-complete":""}"><span class="quest-icon">${q.icon}</span><div class="quest-info"><b>${q.title}</b><span>${q.detail}</span><div class="progress-track"><i style="width:${q.percent}%"></i></div><small>${q.value} / ${q.goal}</small></div><span class="quest-reward">${q.percent===100?"✓":"◆ 10"}</span></article>`).join("")}</section>
-      <section class="streak-card"><span>🔥</span><div><b>${state.streak}-day streak</b><p>You're building a great learning habit. Come back tomorrow!</p></div></section>
+    <main class="screen other-screen quests-screen">
+      <div class="page-heading"><div class="eyebrow">YOUR GOALS</div><h1>Quests</h1><p>Little goals make big progress.</p></div>
+      <div class="quest-tabs" role="tablist" aria-label="Quest categories">
+        <button role="tab" aria-selected="${daily}" class="${daily?"selected":""}" data-quest-tab="daily">Daily</button>
+        <button role="tab" aria-selected="${!daily}" class="${!daily?"selected":""}" data-quest-tab="monthly">Monthly Challenge</button>
+      </div>
+      ${daily ? `
+        <section class="daily-quest-heading"><b>Daily Quests</b><span>Refreshes in  ${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}</span></section>
+        <section class="quest-summary"><div class="quest-ring"><b>${completed}</b><small>/ 3</small></div><div><b>${completed===3?"All quests complete!":"Keep your momentum going"}</b><span>Complete all three quests for a gem reward.</span></div><span class="reward">◆ 40</span></section>
+        <section class="daily-quest-list">${quests.map(q=>`<article class="daily-quest-card ${q.percent===100?"quest-complete":""}"><div class="quest-icon">${q.icon}</div><div class="quest-info"><b>${q.title}</b><span>${q.detail}</span><div class="progress-track"><i style="width:${q.percent}%"></i></div><small>${q.value} / ${q.goal}</small></div><span class="quest-reward">${q.percent===100?"✓":"◆ 10"}</span></article>`).join("")}</section>
+        <section class="friends-quest-card"><div class="friends-quest-art">🤝</div><div><b>Friends Quest</b><p>Team up with a friend and complete a shared weekly goal.</p><small>Sign in to find friends and start a quest.</small></div></section>
+      ` : `
+        <section class="monthly-hero"><div class="monthly-art">🏅</div><div class="eyebrow">MONTHLY CHALLENGE</div><h2>Build your learning streak</h2><p>Complete lessons throughout the month to earn a special badge.</p><div class="monthly-progress"><i style="width:${Math.min(100,state.questLessons/20*100)}%"></i></div><b>${Math.min(state.questLessons,20)} / 20 lessons</b></section>
+        <section class="monthly-milestones"><h3>Milestones</h3><div><span>🌱</span><b>5 lessons</b><small>${state.questLessons>=5?"Complete":"Locked"}</small></div><div><span>⭐</span><b>10 lessons</b><small>${state.questLessons>=10?"Complete":"Locked"}</small></div><div><span>🏆</span><b>20 lessons</b><small>${state.questLessons>=20?"Complete":"Locked"}</small></div></section>
+        <p class="fine-print">Monthly challenge progress is local preview data until the authenticated goals API is mapped to the Android model.</p>
+      `}
     </main>`;
 }
 
@@ -272,22 +285,32 @@ function aboutScreen() {
 }
 
 function profileScreen() {
+  const achievements = [["🔥","Wildfire","7 day streak"],["⚡","Scholar","Earn XP"],["🏆","Champion","League progress"],["🎯","Sharpshooter","Perfect lessons"]];
+  const stats = [["Total XP",state.xp.toLocaleString()],["Day streak",state.streak],["Lessons",state.completedLessons],["Gems",state.gems]];
+  const achievementTab = state.profileTab === "achievements";
   return `
-    <main class="screen other-screen">
+    <main class="screen other-screen profile-screen">
       <div class="profile-head">
-        <div class="profile-avatar">🦉</div><div><h1>${state.learnerName}</h1><p>@local_learner</p><small>Learning ${state.course} ${state.courseFlag}</small></div>
+        <div class="profile-avatar">🦉</div><div><h1>${escapeHtml(state.learnerName)}</h1><p>@local_learner</p><small>Learning ${state.course} ${state.courseFlag}</small></div>
         <button class="icon-button" data-action="settings" aria-label="Settings">⚙</button>
       </div>
-      <section class="profile-stats panel">
-        <div><b>${state.xp}</b><span>Total XP</span></div><div><b>${state.streak}</b><span>Day streak</span></div><div><b>1</b><span>League</span></div>
-      </section>
-      <section class="panel achievement-panel"><div class="panel-title"><b>Achievements</b><span>View all</span></div><div class="achievement-grid"><div>🔥<small>Wildfire</small></div><div>⚡<small>Scholar</small></div><div>🏆<small>Champion</small></div><div>🎯<small>Sharpshooter</small></div></div></section>
+      <div class="profile-tabs" role="tablist" aria-label="Profile sections">
+        <button role="tab" aria-selected="${achievementTab}" class="${achievementTab?"selected":""}" data-profile-tab="achievements">Achievements</button>
+        <button role="tab" aria-selected="${!achievementTab}" class="${!achievementTab?"selected":""}" data-profile-tab="stats">Stats</button>
+      </div>
+      ${achievementTab ? `
+        <section class="profile-section"><div class="profile-section-heading"><b>Achievements</b><span>4 badges</span></div><div class="achievement-grid">${achievements.map(a=>`<div><span>${a[0]}</span><b>${a[1]}</b><small>${a[2]}</small></div>`).join("")}</div></section>
+        <section class="profile-section"><div class="profile-section-heading"><b>Learning language</b><span>${state.courseFlag} ${state.course}</span></div><button class="profile-course-row" data-action="course-picker"><span>Change course</span><b>›</b></button></section>
+      ` : `
+        <section class="profile-stat-grid">${stats.map(s=>`<article><b>${s[1]}</b><span>${s[0]}</span></article>`).join("")}</section>
+        <section class="profile-section"><div class="profile-section-heading"><b>Learning activity</b><span>Local preview</span></div><div class="activity-chart">${Array.from({length:28},(_,i)=>`<i style="height:${8+((i*7+state.completedLessons*11)%38)}px"></i>`).join("")}</div><small class="activity-caption">Recent practice activity · sample visualization</small></section>
+      `}
       <section class="panel profile-menu">
         <button data-action="settings"><span>⚙️</span> Settings <b>›</b></button>
         <button data-action="guidebook"><span>📖</span> Guidebook <b>›</b></button>
         <button data-action="about"><span>ℹ️</span> About <b>›</b></button>
       </section>
-      <p class="fine-print">This profile is a local preview. Sign-in and account sync are not connected.</p>
+      <p class="fine-print">${state.accountSnapshot?"Connected account ID: "+state.accountSnapshot.userId:"Profile details are local preview data until account profile endpoints are connected."}</p>
     </main>`;
 }
 
@@ -484,6 +507,8 @@ function bind() {
   const jumpButton = app.querySelector(".path-jump");
   if (scrollFrame && jumpButton) scrollFrame.addEventListener("scroll", () => jumpButton.classList.toggle("visible", scrollFrame.scrollTop > 160), {passive:true});
   app.querySelectorAll("[data-tab]").forEach(el => el.addEventListener("click", () => navigate(el.dataset.tab)));
+  app.querySelectorAll("[data-quest-tab]").forEach(el => el.addEventListener("click", () => { state.questTab=el.dataset.questTab; render(); }));
+  app.querySelectorAll("[data-profile-tab]").forEach(el => el.addEventListener("click", () => { state.profileTab=el.dataset.profileTab; render(); }));
   app.querySelectorAll("[data-node]").forEach(el => el.addEventListener("click", () => {
     state.selectedNode = Number(el.dataset.node);
     state.sheet = true;
