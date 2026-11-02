@@ -14,6 +14,8 @@ struct AccountSnapshot {
     quests: Value,
     progress: Value,
     schema: Value,
+    energy: Value,
+    xp_summaries: Value,
 }
 
 fn user_id_from_jwt(jwt: &str) -> Result<u64, String> {
@@ -62,7 +64,7 @@ async fn fetch_json(client: &Client, jwt: &str, path: &str, query: &[(&str, &str
 }
 
 #[tauri::command]
-async fn connect_duolingo_account(jwt: String, ui_language: String, timezone: String) -> Result<AccountSnapshot, String> {
+async fn connect_duolingo_account(jwt: String, ui_language: String, timezone: String, start_date: String, end_date: String) -> Result<AccountSnapshot, String> {
     let token = jwt.trim();
     if token.is_empty() {
         return Err("Paste a Duolingo session token to connect.".into());
@@ -79,6 +81,8 @@ async fn connect_duolingo_account(jwt: String, ui_language: String, timezone: St
     let quests = fetch_json(&client, token, &format!("/users/{user_id}/quests"), &[("timezone", &timezone)]).await?;
     let progress = fetch_json(&client, token, &format!("/users/{user_id}/progress"), &[("ui_language", &ui_language), ("timezone", &timezone)]).await?;
     let schema = fetch_json(&client, token, &format!("/users/{user_id}/schema"), &[("ui_language", &ui_language), ("timezone", &timezone)]).await?;
+    let energy = fetch_json(&client, token, &format!("/2017-06-30/users/{user_id}/energy-info"), &[]).await?;
+    let xp_summaries = fetch_json(&client, token, &format!("/2017-06-30/users/{user_id}/xp_summaries"), &[("startDate", &start_date), ("endDate", &end_date)]).await?;
 
     Ok(AccountSnapshot {
         user_id,
@@ -86,6 +90,8 @@ async fn connect_duolingo_account(jwt: String, ui_language: String, timezone: St
         quests,
         progress,
         schema,
+        energy,
+        xp_summaries,
     })
 }
 
