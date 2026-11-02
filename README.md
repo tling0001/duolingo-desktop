@@ -4,18 +4,20 @@ A Tauri v2 desktop application that is being rebuilt around the Android app's mo
 
 ## Current implementation
 
-The frontend now contains a responsive, mobile-inspired app shell with:
+The frontend now contains a responsive app shell based on the supplied Android APK layouts, including:
 
 - Learn tab and vertically scrolling lesson path
 - Unit header, guidebook entry point, lesson and chest nodes
-- Weekly league, daily quests, shop, and profile tabs
+- Leagues podium and standings, Daily / Monthly quest tabs, shop catalog and Profile Achievements / Stats tabs
+- Course-specific sample exercises for Spanish, French, German, Italian, Portuguese and Japanese
+- Persistent local hearts, streak freezes, one-use XP boost and gem purchases
 - Lesson question flow, answer feedback, progress, and completion screen
 - Course selector and settings sheet
 - Animated navigation, lesson transitions, and bottom sheets
 
-The Android APK extraction supplied for this project was inspected for the navigation and layout structure. In particular, `home_content.xml`, `fragment_path.xml`, `view_path_level_rive.xml`, and `view_tab_item.xml` establish the top course/status area, the scrollable learning path, path-node treatment, and five-item bottom navigation. The APK's course catalog contains 303 course identifiers.
+The Android APK extraction supplied for this project was inspected for navigation, node geometry, quest cards, shop, league, and profile structure. See [Android source mapping](docs/android-source-map.md) for verified layout and API references.
 
-**Important:** this is an independently implemented local UI preview. It does not yet authenticate to Duolingo, read a real learner's course state, sync XP/gems/streaks, or submit lesson answers to Duolingo. Sample leaderboard, profile, currency, and lesson data are local demo data. The APK extraction contains decompiled Android classes/resources and Unity IL2CPP binaries, not the original editable Unity project or the private server implementation.
+**Account connection:** Settings now accepts an existing Duolingo JWT and makes authenticated, read-only requests to the three Android routes verified in the APK (`/users/{id}/quests`, `/progress`, and `/schema`). The JWT is held in memory only. This is not a password login or a complete account sync; lesson answers, course-path loading, leagues, profile details, and purchases are not connected. The current Rive node animation is an SVG/CSS recreation, not the original Rive binary. The APK extraction contains decompiled Android classes/resources and Unity IL2CPP binaries, not the original editable Unity project or the private server implementation.
 
 ## Windows install location
 
