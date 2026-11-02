@@ -42,6 +42,7 @@ const state = {
   accountSnapshot: null,
   accountJwt: "",
   accountBusy: false,
+  loginBusy: false,
   accountError: "",
   showDeveloperSession: false,
   questTab: "daily",
@@ -65,6 +66,9 @@ const localDay = () => {
 if (state.questDate !== localDay()) {
   state.questDate = localDay(); state.questXp = 0; state.questStreak = 0; state.questLessons = 0; state.correctInRow = 0; state.questRewardClaimed = false;
 }
+const availableCourses = [
+["🇸🇦","Arabic","ar"],["🇨🇿","Czech","cs"],["🏴","Welsh","cy"],["🇩🇰","Danish","da"],["🇩🇪","German","de"],["🇬🇷","Greek","el"],["🇺🇸","English","en"],["🌍","Esperanto","eo"],["🇪🇸","Spanish","es"],["🇫🇮","Finnish","fi"],["🇫🇷","French","fr"],["🇮🇪","Irish","ga"],["🏴","Scottish Gaelic","gd"],["🇮🇱","Hebrew","he"],["🇮🇳","Hindi","hi"],["🇭🇹","Haitian Creole","ht"],["🇭🇺","Hungarian","hu"],["🐉","High Valyrian","hv"],["🌺","Hawaiian","hw"],["🇮🇩","Indonesian","id"],["🇮🇹","Italian","it"],["🇯🇵","Japanese","ja"],["🇰🇷","Korean","ko"],["🏛️","Latin","la"],["🇳🇱","Dutch","nl-NL"],["🇳🇴","Norwegian","no-BO"],["🏜️","Navajo","nv"],["🇵🇱","Polish","pl"],["🇧🇷","Portuguese","pt"],["🇷🇴","Romanian","ro"],["🇷🇺","Russian","ru"],["🇸🇪","Swedish","sv"],["🇰🇪","Swahili","sw"],["🇵🇭","Tagalog","tl"],["🖖","Klingon","tlh"],["🇹🇷","Turkish","tr"],["🇺🇦","Ukrainian","uk"],["🇻🇳","Vietnamese","vi"],["✡️","Yiddish","yi"],["🇨🇳","Chinese","zh-CN"],["🇿🇦","Zulu","zu"]
+];
 function hasAnswer() { return Array.isArray(state.answer) ? state.answer.length > 0 : state.answer !== null; }
 function recordPracticeDay() {
   const today = localDay();
@@ -364,7 +368,7 @@ function guidebookScreen() {
 
 function introScreen() {
   return `
-    <main class="welcome-screen">
+    <main class="welcome-screen auth-screen-enter">
       <div class="welcome-art" aria-hidden="true">
         <div class="welcome-cloud cloud-left"></div><div class="welcome-cloud cloud-right"></div>
         <div class="welcome-duo">🦉</div>
@@ -381,26 +385,25 @@ function introScreen() {
 }
 
 function onboardingScreen() {
-  const courses = [["🇪🇸","Spanish","Learn Spanish"],["🇫🇷","French","Learn French"],["🇩🇪","German","Learn German"],["🇮🇹","Italian","Learn Italian"],["🇧🇷","Portuguese","Learn Portuguese"],["🇯🇵","Japanese","Learn Japanese"]];
-  return `
-    <main class="onboarding-screen">
-      <header class="onboarding-header"><button class="back-link" data-action="welcome-back">‹</button><div class="onboarding-progress"><i></i></div><span></span></header>
+  return \`
+    <main class="onboarding-screen auth-screen-enter">
+      <header class="onboarding-header"><button class="back-link" data-action="welcome-back" aria-label="Back">‹</button><div class="onboarding-progress"><i></i></div><span></span></header>
       <div class="onboarding-content">
         <div class="onboarding-duo">🦉</div>
         <div class="eyebrow">LET'S GET STARTED</div><h1>What would you like to learn?</h1>
-        <p>Choose a course to start your learning journey.</p>
+        <p>Choose from the courses listed in the Android app catalogue.</p>
+        <input id="course-search" class="course-search" type="search" placeholder="Search 40 languages" aria-label="Search languages" />
         <div class="onboarding-course-list">
-          ${courses.map(c=>`<button class="onboarding-course ${state.course===c[1]?"chosen":""}" data-course="${c[1]}" data-flag="${c[0]}"><span>${c[0]}</span><b>${c[2]}</b><i>${state.course===c[1]?"✓":"›"}</i></button>`).join("")}
+          \${availableCourses.map(c=>\`<button class="onboarding-course \${state.course===c[1]?"chosen":""}" data-course="\${c[1]}" data-flag="\${c[0]}" data-language-name="\${c[1].toLowerCase()}"><span>\${c[0]}</span><b>\${c[1]}</b><i>\${state.course===c[1]?"✓":"›"}</i></button>\`).join("")}
         </div>
       </div>
-      <footer class="onboarding-footer"><button class="welcome-primary" data-action="continue-onboarding">CONTINUE</button><small>This starts a local preview. It does not create or sign in to a Duolingo account.</small></footer>
-    </main>`;
+      <footer class="onboarding-footer"><button class="welcome-primary" data-action="continue-onboarding">CONTINUE</button><small>Course selection starts a local preview. Account course setup and live lessons are separate.</small></footer>
+    </main>\`;
 }
-
 function loginScreen() {
   const phone = state.loginMode === "phone";
   return `
-    <main class="signin-screen">
+    <main class="signin-screen auth-screen-enter">
       <header class="signin-header"><button class="back-link" data-action="welcome-back" aria-label="Back">‹</button><div class="signin-wordmark">duolingo</div><span></span></header>
       <section class="signin-content">
         <div class="signin-owl">🦉</div>
@@ -415,7 +418,7 @@ function loginScreen() {
           <input id="login-phone" type="tel" autocomplete="tel" placeholder="Phone number" />
           <label for="login-code">Verification code</label>
           <input id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter SMS code" />
-          <p class="signin-help">Sign in with your verified phone number and SMS code.</p>
+          <p class="signin-help">Phone sign-in uses a separate SMS verification exchange. That flow is not yet supported by the extracted Android API contract; use email sign-in for account access.</p>
         ` : `
           <label for="login-identity">Email, phone, or username</label>
           <input id="login-identity" type="text" autocomplete="username" placeholder="Email, phone, or username" />
@@ -424,11 +427,11 @@ function loginScreen() {
           <button class="signin-forgot" data-action="forgot-password">Forgot password?</button>
         `}
         ${state.authError?`<p class="signin-error" role="alert">${escapeHtml(state.authError)}</p>`:""}
-        <button class="signin-submit" data-action="login-submit">SIGN IN</button>
+        <button class="signin-submit" data-action="login-submit" ${state.loginBusy || phone ? "disabled" : ""}>${state.loginBusy ? "SIGNING IN…" : "SIGN IN"}</button>
         <div class="signin-divider"><span>OR</span></div>
-        <button class="signin-provider" data-action="provider-google"><span class="google-g">G</span> CONTINUE WITH GOOGLE</button>
-        <button class="signin-provider" data-action="provider-facebook"><span class="facebook-f">f</span> CONTINUE WITH FACEBOOK</button>
-        <button class="signin-provider" data-action="provider-wechat"><span class="wechat-mark">微</span> CONTINUE WITH WECHAT</button>
+        <button class="signin-provider" data-action="provider-google" disabled><span class="google-g">G</span> CONTINUE WITH GOOGLE</button>
+        <button class="signin-provider" data-action="provider-facebook" disabled><span class="facebook-f">f</span> CONTINUE WITH FACEBOOK</button>
+        <button class="signin-provider" data-action="provider-wechat" disabled><span class="wechat-mark">微</span> CONTINUE WITH WECHAT</button>
         <p class="signin-footnote">New to Duolingo? <button data-action="start-learning">Get started</button></p>
       </section>
     </main>`;
@@ -572,6 +575,27 @@ function accountSettingsPanel() {
     </section>`;
 }
 
+async function loginWithEmail() {
+  const identifier=(app.querySelector("#login-identity")?.value||"").trim();
+  const password=app.querySelector("#login-password")?.value||"";
+  if(!identifier||!password){state.authError="Enter your email, phone, or username and password.";render();return;}
+  state.loginBusy=true;state.authError="";render();
+  try {
+    const d=new Date(), endDate=\`\${d.getFullYear()}-\${String(d.getMonth()+1).padStart(2,"0")}-\${String(d.getDate()).padStart(2,"0")}\`;
+    d.setDate(d.getDate()-6);
+    const startDate=\`\${d.getFullYear()}-\${String(d.getMonth()+1).padStart(2,"0")}-\${String(d.getDate()).padStart(2,"0")}\`;
+    const result=await invoke("login_duolingo_email",{identifier,password,distinctId:getInstallDistinctId(),uiLanguage:"en",timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC",startDate,endDate});
+    state.accountJwt=result.jwt;state.accountSnapshot=result.snapshot;state.accountError="";
+    state.screen="learn";state.tab="learn";state.authError="";
+  } catch(error){state.authError=String(error||"Sign-in failed. Check your credentials and try again.");}
+  finally{state.loginBusy=false;render();}
+}
+function getInstallDistinctId(){
+  const key="duolingo-desktop-distinct-id";
+  try{let id=localStorage.getItem(key);if(!id){id=globalThis.crypto?.randomUUID?.()||("desktop-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2));localStorage.setItem(key,id);}return id;}
+  catch{return globalThis.crypto?.randomUUID?.()||("desktop-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2));}
+}
+
 async function connectAccount(refresh = false) {
   const field = app.querySelector("#duo-session-token");
   const jwt = refresh ? state.accountJwt : (field?.value || "").trim();
@@ -616,7 +640,7 @@ function overlays() {
       </div>`;
   }
   if (state.coursePicker) {
-    const courses = [["🇪🇸","Spanish"],["🇫🇷","French"],["🇩🇪","German"],["🇯🇵","Japanese"],["🇮🇹","Italian"],["🇧🇷","Portuguese"]];
+    const courses = availableCourses.map(([flag,name]) => [flag,name]);
     html += `
       <div class="overlay" data-action="dismiss-overlay"><section class="modal" role="dialog" aria-modal="true">
         <div class="modal-head"><h2>Choose a course</h2><button data-action="close-course" class="modal-close">×</button></div>
@@ -747,6 +771,8 @@ function bind() {
     state.gems-=cost;
     render();
   }));
+  const courseSearch = app.querySelector("#course-search");
+  if (courseSearch) courseSearch.addEventListener("input", () => { const q=courseSearch.value.trim().toLowerCase(); app.querySelectorAll(".onboarding-course").forEach(item => { item.hidden=!item.dataset.languageName.includes(q); }); });
   app.querySelectorAll("[data-course]").forEach(el => el.addEventListener("click", () => {
     state.course = el.dataset.course;
     state.courseFlag = el.dataset.flag;
@@ -772,7 +798,7 @@ function bind() {
       case "login-email-mode": state.loginMode="email"; state.authError=""; break;
       case "login-phone-mode": state.loginMode="phone"; state.authError=""; break;
       case "forgot-password": state.forgotPassword=true; state.authError=""; break;
-      case "login-submit": state.authError="Credential sign-in is not connected yet. Your details have not been sent. Use the separate developer account-data connection in Settings only if you already have a session token."; break;
+      case "login-submit": if (state.loginMode === "phone") { state.authError="Phone/SMS sign-in is not supported yet. Please use email and password."; break; } return loginWithEmail();
       case "reset-password-submit": state.authError="Password-reset delivery is not connected yet. No email has been sent."; break;
       case "provider-google": case "provider-facebook": case "provider-wechat": state.authError="This sign-in provider is not configured in the desktop client yet."; break;
       case "connect-account": connectAccount(false); return;
