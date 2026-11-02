@@ -225,3 +225,23 @@ button:focus-visible{outline:3px solid #1cb0f6;outline-offset:3px}
 .path-jump.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
 
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+
+
+/* Android-source fidelity pass: Juicy palette, type scale and native path proportions. */
+:root{font-family:"Duolingo Sans","DuoDIN",system-ui,sans-serif;color:#4b4b4b;background:#fffffd;--ink:#4b4b4b;--muted:#afafaf;--panel:#fffffd;--line:#e5e5e5}
+.app-shell{width:100%;max-width:none;background:#fffffd}
+.topbar{background:#fffffd}
+.bottom-tabs{height:86px;min-height:86px;background:#fffffd;padding-bottom:env(safe-area-inset-bottom)}
+.node-row{height:94px}
+.path-node{width:70px;height:65px;border-radius:23px}
+.path-node.done{background:#58cc02;box-shadow:0 5px 0 #46a302,0 8px 10px #0000000c}
+.path-node.active{background:#1cb0f6;box-shadow:0 5px 0 #168bc2,0 8px 10px #0000000c}
+.path-node.locked{background:#e5e5e5;box-shadow:0 5px 0 #c9c9c9;color:#afafaf}
+.path-node.chest{background:#ff9600;box-shadow:0 5px 0 #d47d00}
+.path-node.legendary{background:#ce82ff;box-shadow:0 5px 0 #a95edc}
+.node-symbol{font-size:27px}
+.content-frame{background:#fffffd}
+.screen{background:#fffffd}
+.unit-header{background:#fffffd}
+@media(min-width:760px){.app-shell{max-width:none}.path-area{max-width:500px}}
+@media(prefers-reduced-motion:reduce){.content-frame,.path-node,.primary-button,.check-button{animation:none!important;transition:none!important}}
