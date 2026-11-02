@@ -29,13 +29,18 @@ const state = {
   lessonFailed: false,
   lastPracticeDate: "",
   questDate: "",
+  questRewardClaimed: false,
+  streakFreezes: 0,
+  doubleXp: false,
+  learnerName: "Learner",
+  leagueWeekEndsAt: Date.now() + 4*86400000,
 };
 
 // Keep preview progress across app restarts without pretending to sync an account.
 try {
   const saved = JSON.parse(localStorage.getItem("duolingo-desktop-preview") || "null");
   if (saved && typeof saved === "object") {
-    for (const key of ["course", "courseFlag", "streak", "gems", "xp", "selectedNode", "completedLessons", "animations", "hearts", "questXp", "questStreak", "questLessons", "lastPracticeDate", "questDate"]) {
+    for (const key of ["course", "courseFlag", "streak", "gems", "xp", "selectedNode", "completedLessons", "animations", "hearts", "questXp", "questStreak", "questLessons", "lastPracticeDate", "questDate", "questRewardClaimed", "streakFreezes", "doubleXp", "learnerName", "leagueWeekEndsAt"]) {
       if (saved[key] !== undefined) state[key] = saved[key];
     }
   }
@@ -46,7 +51,7 @@ const localDay = () => {
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 };
 if (state.questDate !== localDay()) {
-  state.questDate = localDay(); state.questXp = 0; state.questStreak = 0; state.questLessons = 0; state.correctInRow = 0;
+  state.questDate = localDay(); state.questXp = 0; state.questStreak = 0; state.questLessons = 0; state.correctInRow = 0; state.questRewardClaimed = false;
 }
 function hasAnswer() { return Array.isArray(state.answer) ? state.answer.length > 0 : state.answer !== null; }
 function recordPracticeDay() {
@@ -56,15 +61,17 @@ function recordPracticeDay() {
     const previous = new Date(state.lastPracticeDate+"T00:00:00");
     const current = new Date(today+"T00:00:00");
     const days = Math.round((current-previous)/86400000);
-    state.streak = days === 1 ? state.streak+1 : 1;
+    if (days === 1) state.streak += 1;
+    else if (days === 2 && state.streakFreezes>0) state.streakFreezes -= 1;
+    else state.streak = 1;
   }
   state.lastPracticeDate = today;
 }
 
 function persistState() {
   try {
-    const { course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons, lastPracticeDate, questDate } = state;
-    localStorage.setItem("duolingo-desktop-preview", JSON.stringify({ course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons, lastPracticeDate, questDate }));
+    const { course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons, lastPracticeDate, questDate, questRewardClaimed, streakFreezes, doubleXp, learnerName, leagueWeekEndsAt } = state;
+    localStorage.setItem("duolingo-desktop-preview", JSON.stringify({ course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons, lastPracticeDate, questDate, questRewardClaimed, streakFreezes, doubleXp, learnerName, leagueWeekEndsAt }));
   } catch { /* The app remains usable when storage is unavailable. */ }
 }
 
@@ -133,21 +140,27 @@ function unitHeader() {
 }
 
 function pathNode(node, index) {
-  const done = node.type === "done";
-  const active = node.type === "active";
   const locked = node.type === "locked";
+  const active = node.type === "active";
   const chest = node.type === "chest";
-  const cls = [ "path-node", node.side || "center", node.type ].join(" ");
-  const icon = chest ? "🎁" : done ? "★" : locked ? "🔒" : node.type === "legendary" ? "👑" : "★";
-  const label = chest ? "Unit chest" : node.type === "legendary" ? "Legendary" : `Level ${index + 1}`;
+  const cls = ["path-node", node.side || "center", node.type].join(" ");
+  const label = chest ? "Unit chest" : node.type === "legendary" ? "Legendary level" : `Level ${index + 1}`;
+  const art = chest
+    ? '<svg class="node-art chest-art" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 18h34v24H7z"/><path d="M5 13h38v9H5z"/><path d="M20 13c-9-13-17-2-7 3h11M28 13c9-13 17-2 7 3h-11"/><path d="M21 18h6v24h-6z"/></svg>'
+    : locked
+      ? '<svg class="node-art" viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="21" width="28" height="21" rx="5"/><path d="M16 21v-6a8 8 0 0 1 16 0v6"/><circle cx="24" cy="31" r="2.5"/></svg>'
+      : node.type === "legendary"
+        ? '<svg class="node-art" viewBox="0 0 48 48" aria-hidden="true"><path d="m7 14 10 8 7-13 7 13 10-8-4 25H11z"/><path d="M13 34h22"/></svg>'
+        : '<svg class="node-art" viewBox="0 0 48 48" aria-hidden="true"><path d="m24 4 5.8 12 13.2 1.9-9.5 9.2 2.2 13L24 34l-11.7 6.1 2.2-13L5 17.9 18.2 16z"/></svg>';
   return `
     <div class="node-row ${node.side || "center"}">
       <div class="node-wrap">
         <button class="${cls}" data-node="${index}" aria-label="${label}" ${locked ? "disabled" : ""}>
-          <span class="node-symbol">${icon}</span>
-          ${active ? '<span class="node-shine"></span>' : ""}
+          ${active ? '<svg class="node-ring" viewBox="0 0 82 78" aria-hidden="true"><ellipse cx="41" cy="39" rx="37" ry="34"/></svg>' : ""}
+          <span class="node-face">${art}</span>
+          ${active ? '<span class="node-caption">START</span>' : ""}
         </button>
-        ${active ? '<span class="node-caption">START</span>' : ""}
+        ${node.type === "done" ? '<span class="node-stars">★★★</span>' : ""}
       </div>
       ${chest ? '<span class="node-label">Unit chest</span>' : ""}
     </div>`;
@@ -178,51 +191,51 @@ function learnScreen() {
 }
 
 function leaderboardScreen() {
-  const people = [
-    ["🥇","Sofia","2,840 XP","you are 2,200 XP behind"],
-    ["🥈","Lucas","2,410 XP",""],
-    ["🥉","Mia","1,980 XP",""],
-    ["4","Oliver","1,540 XP",""],
-    ["5","Ava","1,320 XP",""],
-    ["6","You","640 XP",""],
-  ];
+  const rivals = [{name:"Sofia",xp:2840,avatar:"👩🏻"},{name:"Lucas",xp:2410,avatar:"👨🏽"},{name:"Mia",xp:1980,avatar:"👩🏼"},{name:"Oliver",xp:1540,avatar:"👨🏻"},{name:"Ava",xp:1320,avatar:"👩🏾"},{name:"Noah",xp:810,avatar:"👨🏼"}];
+  const people = [...rivals,{name:state.learnerName,xp:state.xp,avatar:"🦉",you:true}].sort((a,b)=>b.xp-a.xp);
+  const rank = people.findIndex(p=>p.you)+1;
+  const days = Math.max(0,Math.ceil((state.leagueWeekEndsAt-Date.now())/86400000));
   return `
-    <main class="screen other-screen">
-      <div class="page-heading"><div class="eyebrow">WEEKLY LEAGUE</div><h1>Amethyst League</h1><p>Earn XP to climb the leaderboard.</p></div>
-      <section class="league-banner"><div class="league-gem">💎</div><div><b>Top 10 advance</b><span>Finish in the top 10 to move up a league.</span></div></section>
-      <section class="panel">
-        <div class="panel-title"><b>Leaderboard</b><span>Ends in 3d 14h</span></div>
-        ${people.map(p=>`<div class="person-row ${p[1]==="You"?"you":""}"><span class="rank">${p[0]}</span><span class="person-avatar">${p[1]==="You"?"🦉":"👤"}</span><span class="person-name">${p[1]} ${p[1]==="You"?"(You)":""}</span><b class="person-xp">${p[2]}</b></div>`).join("")}
-      </section>
-      <p class="fine-print">League standings shown here are sample data in this local preview.</p>
+    <main class="screen other-screen league-screen">
+      <div class="league-hero"><div class="league-hero-art">🏆</div><div class="eyebrow">WEEKLY LEAGUE</div><h1>Amethyst League</h1><p>Compete with learners around the world.</p><div class="league-progress-summary"><span>⬆ Top 10 promote</span><span>⬇ Bottom 5 demote</span></div></div>
+      <section class="league-podium"><div class="podium-person second"><span class="podium-avatar">${people[1]?.avatar||"👤"}</span><b>${people[1]?.name||"—"}</b><small>${(people[1]?.xp||0).toLocaleString()} XP</small><i>2</i></div><div class="podium-person first"><span class="podium-crown">👑</span><span class="podium-avatar">${people[0]?.avatar||"👤"}</span><b>${people[0]?.name||"—"}</b><small>${(people[0]?.xp||0).toLocaleString()} XP</small><i>1</i></div><div class="podium-person third"><span class="podium-avatar">${people[2]?.avatar||"👤"}</span><b>${people[2]?.name||"—"}</b><small>${(people[2]?.xp||0).toLocaleString()} XP</small><i>3</i></div></section>
+      <section class="panel league-table"><div class="panel-title"><b>Leaderboard</b><span>Ends in ${days} days</span></div>
+        ${people.map((p,i)=>`<div class="person-row ${p.you?"you":""}"><span class="rank">${i+1}</span><span class="person-avatar">${p.avatar}</span><span class="person-name">${p.name}${p.you?" (You)":""}</span><b class="person-xp">${p.xp.toLocaleString()} XP</b></div>`).join("")}
+      </section><p class="fine-print">Local preview league. Real league membership and standings require an authenticated Duolingo account.</p>
     </main>`;
 }
 
 function questsScreen() {
   const quests = [
-    ["⭐","Earn 20 XP","Earn 20 XP in lessons",`${Math.min(state.questXp,20)} / 20`,Math.min(100,state.questXp/20*100)],
-    ["🎯","Get 5 in a row","Answer 5 questions correctly in a row",`${Math.min(state.questStreak,5)} / 5`,Math.min(100,state.questStreak/5*100)],
-    ["📚","Complete 2 lessons","Finish any 2 learning sessions",`${Math.min(state.questLessons,2)} / 2`,Math.min(100,state.questLessons/2*100)],
-  ];
+    {icon:"⚡",title:"Earn 20 XP",detail:"Earn XP by completing lessons",value:Math.min(state.questXp,20),goal:20},
+    {icon:"🎯",title:"Get 5 in a row",detail:"Answer 5 questions correctly in a row",value:Math.min(state.questStreak,5),goal:5},
+    {icon:"📚",title:"Complete 2 lessons",detail:"Finish any 2 learning sessions",value:Math.min(state.questLessons,2),goal:2},
+  ].map(q=>({...q,percent:Math.min(100,q.value/q.goal*100)}));
+  const completed = quests.filter(q=>q.value>=q.goal).length;
+  if (completed===3 && !state.questRewardClaimed) { state.gems+=40; state.questRewardClaimed=true; }
+
   return `
     <main class="screen other-screen">
       <div class="page-heading"><div class="eyebrow">DAILY GOALS</div><h1>Quests</h1><p>A little practice goes a long way.</p></div>
-      <section class="quest-summary"><div class="quest-ring"><b>2</b><small>/ 3</small></div><div><b>Daily Quests</b><span>Complete your quests to earn gems.</span></div><span class="reward">◆ 40</span></section>
-      <section class="panel quest-list">${quests.map(q=>`<article class="quest-row"><span class="quest-icon">${q[0]}</span><div class="quest-info"><b>${q[1]}</b><span>${q[2]}</span><div class="progress-track"><i style="width:${q[4]}%"></i></div><small>${q[3]}</small></div><span class="quest-reward">◆ ${q[4]===60?10:15}</span></article>`).join("")}</section>
+      <section class="quest-summary"><div class="quest-ring"><b>${completed}</b><small>/ 3</small></div><div><b>Daily Quests</b><span>${completed===3?"All quests complete!":"Complete your quests to earn gems."}</span></div><span class="reward">◆ 40</span></section>
+      <section class="panel quest-list">${quests.map(q=>`<article class="quest-row ${q.percent===100?"quest-complete":""}"><span class="quest-icon">${q.icon}</span><div class="quest-info"><b>${q.title}</b><span>${q.detail}</span><div class="progress-track"><i style="width:${q.percent}%"></i></div><small>${q.value} / ${q.goal}</small></div><span class="quest-reward">${q.percent===100?"✓":"◆ 10"}</span></article>`).join("")}</section>
       <section class="streak-card"><span>🔥</span><div><b>${state.streak}-day streak</b><p>You're building a great learning habit. Come back tomorrow!</p></div></section>
     </main>`;
 }
 
 function shopScreen() {
+  const items = [
+    {id:"freeze",icon:"🧊",name:"Streak Freeze",description:"Protect your streak if you miss a day.",price:200,owned:state.streakFreezes>0,ownedLabel:`${state.streakFreezes} owned`},
+    {id:"double",icon:"💎",name:"Double or Nothing",description:"Activate a gem wager challenge for your streak.",price:50,owned:state.doubleXp,ownedLabel:"Active"},
+    {id:"hearts",icon:"❤️",name:"Heart Refill",description:"Refill your hearts so you can keep learning.",price:350,owned:state.hearts>=5,ownedLabel:"Full"},
+  ];
   return `
-    <main class="screen other-screen">
-      <div class="page-heading"><div class="eyebrow">POWER UP YOUR LEARNING</div><h1>Shop</h1><p>Get helpful items for your learning journey.</p></div>
-      <section class="gems-balance"><span class="gem big">◆</span><div><small>YOUR GEM BALANCE</small><b>${state.gems}</b></div><button data-action="earn-gems">Earn gems</button></section>
-      <section class="panel shop-list">
-        <article class="shop-item"><span class="shop-art">🧊</span><div><b>Streak Freeze</b><p>Protect your streak for one missed day.</p><small>Available in the official app</small></div><button class="buy-button" data-action="buy-freeze">◆ 200</button></article>
-        <article class="shop-item"><span class="shop-art">⏱️</span><div><b>Double or Nothing</b><p>Make a gem wager to keep your streak.</p><small>Preview item</small></div><button class="buy-button" data-action="buy-double">◆ 50</button></article>
-        <article class="shop-item"><span class="shop-art">💚</span><div><b>Heart refill</b><p>Get back to learning with full hearts.</p><small>Preview item</small></div><button class="buy-button" data-action="buy-hearts">◆ 350</button></article>
-      </section>
+    <main class="screen other-screen shop-screen">
+      <div class="shop-hero"><div class="eyebrow">DUOLINGO SHOP</div><h1>Shop</h1><p>Get items to help you on your learning journey.</p><div class="shop-wallet"><span class="gem big">◆</span><div><small>GEM BALANCE</small><b>${state.gems.toLocaleString()}</b></div></div></div>
+      <section class="shop-section"><h2>Power-ups</h2><div class="panel shop-list">
+        ${items.map(item=>`<article class="shop-item"><span class="shop-art ${item.id}">${item.icon}</span><div><b>${item.name}</b><p>${item.description}</p>${item.owned?`<small class="owned-label">${item.ownedLabel}</small>`:""}</div><button class="buy-button" data-buy="${item.id}" ${item.owned||state.gems<item.price?"disabled":""}>${item.owned?"Owned":`◆ ${item.price}`}</button></article>`).join("")}
+      </div></section>
+      <section class="shop-note"><span>🛍️</span><p>Purchases in this build only change local preview data. Real shop inventory, prices and purchases are controlled by Duolingo's authenticated service.</p></section>
     </main>`;
 }
 
@@ -257,7 +270,7 @@ function profileScreen() {
   return `
     <main class="screen other-screen">
       <div class="profile-head">
-        <div class="profile-avatar">🦉</div><div><h1>Learner</h1><p>@duolingo_learner</p><small>Learning ${state.course} 🇪🇸</small></div>
+        <div class="profile-avatar">🦉</div><div><h1>${state.learnerName}</h1><p>@local_learner</p><small>Learning ${state.course} ${state.courseFlag}</small></div>
         <button class="icon-button" data-action="settings" aria-label="Settings">⚙</button>
       </div>
       <section class="profile-stats panel">
@@ -392,8 +405,9 @@ function nextQuestion() {
   if (state.question === questions.length - 1) {
     state.lessonDone = true;
     recordPracticeDay();
-    const earnedXp = state.correct * 2 + 4;
+    const earnedXp = (state.correct * 2 + 4) * (state.doubleXp?2:1);
     state.xp += earnedXp;
+    state.doubleXp = false;
     state.questXp += earnedXp;
     state.questLessons += 1;
   } else {
@@ -422,6 +436,17 @@ function bind() {
   }));
   app.querySelectorAll("[data-remove-word]").forEach(el => el.addEventListener("click", () => {
     if (!state.checked) { const words = [...(Array.isArray(state.answer)?state.answer:[])]; words.splice(Number(el.dataset.removeWord),1); state.answer = words; render(); }
+  }));
+  app.querySelectorAll("[data-buy]").forEach(el => el.addEventListener("click", () => {
+    const item=el.dataset.buy;
+    const costs={freeze:200,double:50,hearts:350};
+    const cost=costs[item];
+    if (!cost || state.gems<cost) return;
+    if (item==="freeze") state.streakFreezes+=1;
+    if (item==="double") state.doubleXp=true;
+    if (item==="hearts") state.hearts=5;
+    state.gems-=cost;
+    render();
   }));
   app.querySelectorAll("[data-course]").forEach(el => el.addEventListener("click", () => {
     state.course = el.dataset.course;
@@ -465,9 +490,9 @@ function bind() {
       case "jump-current": app.querySelector("[data-node=\"2\"]")?.scrollIntoView({behavior:"smooth",block:"center"}); return;
       case "streak": state.screen = "profile"; state.tab = "profile"; break;
       case "gems": state.screen = "shop"; state.tab = "shop"; break;
-      case "earn-gems": window.alert("Gems are earned by completing lessons and quests in Duolingo. This preview does not connect to an account."); return;
+      case "earn-gems": state.screen="quests"; state.tab="quests"; break;
       case "buy-freeze": case "buy-double": case "buy-hearts":
-        window.alert("Purchases are disabled in this local preview. No gems have been spent."); return;
+        window.alert("Choose an item in the Shop to purchase it with preview gems."); return;
       case "about": state.screen = "about"; break;
       case "back-learn": state.screen = "learn"; state.tab = "learn"; break;
       case "back-profile": state.screen = "profile"; state.tab = "profile"; break;
