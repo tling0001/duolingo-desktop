@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Duolingo Desktop",
+  "productName": "Duolingo",
   "version": "0.1.0",
   "identifier": "com.tling0001.duolingodesktop",
   "build": {
@@ -34,6 +34,12 @@
     ],
     "category": "Education",
     "shortDescription": "Learn a language with Duolingo",
-    "longDescription": "A cross-platform desktop window for the official Duolingo learning experience."
+    "longDescription": "A desktop learning app inspired by Duolingo's Android experience.",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "template": "./windows/installer.nsi"
+      }
+    }
   }
 }
