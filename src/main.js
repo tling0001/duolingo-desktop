@@ -21,7 +21,29 @@ const state = {
   correct: 0,
   lessonDone: false,
   animations: true,
+  hearts: 5,
+  questXp: 0,
+  questStreak: 0,
+  questLessons: 0,
+  correctInRow: 0,
 };
+
+// Keep preview progress across app restarts without pretending to sync an account.
+try {
+  const saved = JSON.parse(localStorage.getItem("duolingo-desktop-preview") || "null");
+  if (saved && typeof saved === "object") {
+    for (const key of ["course", "courseFlag", "streak", "gems", "xp", "selectedNode", "completedLessons", "animations", "hearts", "questXp", "questStreak", "questLessons"]) {
+      if (saved[key] !== undefined) state[key] = saved[key];
+    }
+  }
+} catch { /* Ignore invalid or unavailable local storage. */ }
+
+function persistState() {
+  try {
+    const { course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons } = state;
+    localStorage.setItem("duolingo-desktop-preview", JSON.stringify({ course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons }));
+  } catch { /* The app remains usable when storage is unavailable. */ }
+}
 
 const questions = [
   { prompt: "How do you say “hello”?", hint: "Select the correct translation", answers: ["Hola", "Gracias", "Adiós", "Por favor"], correct: "Hola", note: "Hola means hello." },
@@ -54,7 +76,7 @@ function header() {
 
 function tabs() {
   const items = [
-    ["learn", "Learn"], ["leaderboard", "League"], ["quests", "Quests"], ["shop", "Shop"], ["profile", "Profile"],
+    ["learn", "Learn"], ["leaderboard", "Leagues"], ["quests", "Quests"], ["shop", "Shop"], ["profile", "Profile"],
   ];
   return `<nav class="bottom-tabs" aria-label="Main navigation">${items.map(([id,label]) => `
     <button class="tab ${state.tab === id ? "active" : ""}" data-tab="${id}">
@@ -142,9 +164,9 @@ function leaderboardScreen() {
 
 function questsScreen() {
   const quests = [
-    ["⭐","Earn 20 XP","Earn 20 XP in lessons","12 / 20",60],
-    ["🎯","Get 5 in a row","Answer 5 questions correctly in a row","3 / 5",60],
-    ["📚","Complete 2 lessons","Finish any 2 learning sessions","1 / 2",50],
+    ["⭐","Earn 20 XP","Earn 20 XP in lessons",`${Math.min(state.questXp,20)} / 20`,Math.min(100,state.questXp/20*100)],
+    ["🎯","Get 5 in a row","Answer 5 questions correctly in a row",`${Math.min(state.questStreak,5)} / 5`,Math.min(100,state.questStreak/5*100)],
+    ["📚","Complete 2 lessons","Finish any 2 learning sessions",`${Math.min(state.questLessons,2)} / 2`,Math.min(100,state.questLessons/2*100)],
   ];
   return `
     <main class="screen other-screen">
@@ -223,7 +245,7 @@ function lessonScreen() {
       <header class="lesson-header">
         <button class="close-lesson" data-action="exit-lesson" aria-label="Exit lesson">×</button>
         <div class="lesson-progress"><i style="width:${percent}%"></i></div>
-        <span class="hearts">♥ 5</span>
+        <span class="hearts">♥ ${state.hearts}</span>
       </header>
       <section class="question-area">
         <div class="eyebrow">TRANSLATE THIS PHRASE</div>
@@ -282,6 +304,7 @@ function overlays() {
 }
 
 function render() {
+  persistState();
   if (state.screen === "lesson") {
     app.innerHTML = lessonScreen() + overlays();
     bind();
@@ -322,6 +345,7 @@ function startLesson() {
   state.answer = null;
   state.checked = false;
   state.correct = 0;
+  state.hearts = 5;
   state.lessonDone = false;
   render();
 }
@@ -330,7 +354,10 @@ function nextQuestion() {
   if (state.question === questions.length - 1) {
     state.lessonDone = true;
     state.streak += 1;
-    state.xp += state.correct * 2 + 4;
+    const earnedXp = state.correct * 2 + 4;
+    state.xp += earnedXp;
+    state.questXp += earnedXp;
+    state.questLessons += 1;
   } else {
     state.question += 1;
     state.answer = null;
@@ -372,7 +399,17 @@ function bind() {
       case "toggle-animations": state.animations = !state.animations; break;
       case "start-lesson": startLesson(); return;
       case "check-answer":
-        if (state.answer !== null) { state.checked = true; if (state.answer === questions[state.question].correct) state.correct += 1; }
+        if (state.answer !== null) {
+          state.checked = true;
+          if (state.answer === questions[state.question].correct) {
+            state.correct += 1;
+            state.correctInRow += 1;
+            state.questStreak = Math.max(state.questStreak, state.correctInRow);
+          } else {
+            state.hearts = Math.max(0, state.hearts - 1);
+            state.correctInRow = 0;
+          }
+        }
         break;
       case "next-question": nextQuestion(); return;
       case "exit-lesson":
@@ -390,7 +427,18 @@ function bind() {
       case "about": state.screen = "about"; break;
       case "back-learn": state.screen = "learn"; state.tab = "learn"; break;
       case "back-profile": state.screen = "profile"; state.tab = "profile"; break;
-      case "play-word": window.alert("Audio playback will be added with the lesson audio integration."); return;
+      case "play-word": {
+        const phrase = el.closest(".word-row")?.querySelector("b")?.textContent || "Hola";
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(phrase);
+          utterance.lang = state.course === "Japanese" ? "ja-JP" : state.course === "French" ? "fr-FR" : state.course === "German" ? "de-DE" : state.course === "Italian" ? "it-IT" : state.course === "Portuguese" ? "pt-BR" : "es-ES";
+          window.speechSynthesis.speak(utterance);
+        } else {
+          window.alert("Speech playback is not available on this device.");
+        }
+        return;
+      }
     }
     render();
   }));
