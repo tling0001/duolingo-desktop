@@ -394,6 +394,8 @@ function accountSettingsPanel() {
         <details class="api-data"><summary>Quests response</summary><pre>${escapeHtml(JSON.stringify(snapshot.quests,null,2).slice(0,6000))}</pre></details>
         <details class="api-data"><summary>Progress response</summary><pre>${escapeHtml(JSON.stringify(snapshot.progress,null,2).slice(0,6000))}</pre></details>
         <details class="api-data"><summary>Schema response</summary><pre>${escapeHtml(JSON.stringify(snapshot.schema,null,2).slice(0,6000))}</pre></details>
+        <details class="api-data"><summary>Energy info response</summary><pre>${escapeHtml(JSON.stringify(snapshot.energy,null,2).slice(0,6000))}</pre></details>
+        <details class="api-data"><summary>XP summaries response</summary><pre>${escapeHtml(JSON.stringify(snapshot.xpSummaries,null,2).slice(0,6000))}</pre></details>
       </section>`;
   }
   return `
@@ -419,7 +421,9 @@ async function connectAccount(refresh = false) {
     const data = await invoke("connect_duolingo_account", {
       jwt,
       uiLanguage: "en",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      startDate: (()=>{const d=new Date();d.setDate(d.getDate()-6);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`})(),
+      endDate: (()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`})()
     });
     state.accountJwt = jwt;
     state.accountSnapshot = data;
