@@ -212,6 +212,12 @@ function leaderboardScreen() {
     </main>`;
 }
 
+function dailyRefreshLabel() {
+  const next = new Date(); next.setHours(24,0,0,0);
+  const minutes = Math.max(0,Math.floor((next-Date.now())/60000));
+  return `${Math.floor(minutes/60)}h ${minutes%60}m`;
+}
+
 function questsScreen() {
   const quests = [
     {icon:"⚡",title:"Earn 20 XP",detail:"Earn XP by completing lessons",value:Math.min(state.questXp,20),goal:20},
@@ -229,7 +235,7 @@ function questsScreen() {
         <button role="tab" aria-selected="${!daily}" class="${!daily?"selected":""}" data-quest-tab="monthly">Monthly Challenge</button>
       </div>
       ${daily ? `
-        <section class="daily-quest-heading"><b>Daily Quests</b><span>Refreshes in  ${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}</span></section>
+        <section class="daily-quest-heading"><b>Daily Quests</b><span>Refreshes in ${dailyRefreshLabel()}</span></section>
         <section class="quest-summary"><div class="quest-ring"><b>${completed}</b><small>/ 3</small></div><div><b>${completed===3?"All quests complete!":"Keep your momentum going"}</b><span>Complete all three quests for a gem reward.</span></div><span class="reward">◆ 40</span></section>
         <section class="daily-quest-list">${quests.map(q=>`<article class="daily-quest-card ${q.percent===100?"quest-complete":""}"><div class="quest-icon">${q.icon}</div><div class="quest-info"><b>${q.title}</b><span>${q.detail}</span><div class="progress-track"><i style="width:${q.percent}%"></i></div><small>${q.value} / ${q.goal}</small></div><span class="quest-reward">${q.percent===100?"✓":"◆ 10"}</span></article>`).join("")}</section>
         <section class="friends-quest-card"><div class="friends-quest-art">🤝</div><div><b>Friends Quest</b><p>Team up with a friend and complete a shared weekly goal.</p><small>Sign in to find friends and start a quest.</small></div></section>
