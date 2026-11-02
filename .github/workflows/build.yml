@@ -29,7 +29,7 @@ jobs:
             bundles: dmg
           - name: Windows x64
             os: windows-latest
-            bundles: msi,nsis
+            bundles: nsis
           - name: Linux x64
             os: ubuntu-24.04
             bundles: appimage,deb,rpm
