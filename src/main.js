@@ -82,15 +82,53 @@ function persistState() {
   } catch { /* The app remains usable when storage is unavailable. */ }
 }
 
-const questions = [
-  { prompt: "How do you say “hello”?", hint: "Select the correct translation", answers: ["Hola", "Gracias", "Adiós", "Por favor"], correct: "Hola", note: "Hola means hello." },
-  { prompt: "What do you hear?", hint: "Listen, then choose the matching phrase", type: "listen", spoken: "El agua", answers: ["El pan", "El agua", "La leche", "El café"], correct: "El agua", note: "Agua is feminine, but uses “el” in the singular." },
-  { prompt: "Write this in Spanish", hint: "I eat bread", type: "wordbank", bank: ["Yo", "como", "pan", "bebo", "agua"], correct: "Yo como pan", note: "Como is the first-person form of comer (to eat)." },
-  { prompt: "What does “gracias” mean?", hint: "Select the English meaning", answers: ["Good morning", "Please", "Thank you", "Excuse me"], correct: "Thank you", note: "Gracias means thank you." },
-  { prompt: "Complete the phrase: “Buenos ___”", hint: "Good morning", answers: ["noches", "días", "tardes", "amigos"], correct: "días", note: "Buenos días is the common greeting for good morning." },
-];
+const questionBank = {
+  Spanish: [
+    {prompt:"How do you say “hello”?",hint:"Select the correct translation",answers:["Hola","Gracias","Adiós","Por favor"],correct:"Hola",note:"Hola means hello."},
+    {prompt:"What do you hear?",hint:"Listen, then choose the matching phrase",type:"listen",spoken:"El agua",answers:["El pan","El agua","La leche","El café"],correct:"El agua",note:"Agua is feminine, but uses “el” in the singular."},
+    {prompt:"Write this in Spanish",hint:"I eat bread",type:"wordbank",bank:["Yo","como","pan","bebo","agua"],correct:"Yo como pan",note:"Como is the first-person form of comer (to eat)."},
+    {prompt:"What does “gracias” mean?",hint:"Select the English meaning",answers:["Good morning","Please","Thank you","Excuse me"],correct:"Thank you",note:"Gracias means thank you."},
+    {prompt:"Complete the phrase: “Buenos ___”",hint:"Good morning",answers:["noches","días","tardes","amigos"],correct:"días",note:"Buenos días is the common greeting for good morning."}
+  ],
+  French: [
+    {prompt:"How do you say “hello”?",hint:"Select the correct translation",answers:["Bonjour","Merci","Au revoir","S'il vous plaît"],correct:"Bonjour",note:"Bonjour is the standard greeting for hello or good day."},
+    {prompt:"What do you hear?",hint:"Listen, then choose the matching phrase",type:"listen",spoken:"De l'eau",answers:["Du pain","De l'eau","Du lait","Du café"],correct:"De l'eau",note:"De l'eau means some water."},
+    {prompt:"Write this in French",hint:"I eat bread",type:"wordbank",bank:["Je","mange","du","pain","bois","eau"],correct:"Je mange du pain",note:"Mange is the first-person form of manger (to eat)."},
+    {prompt:"What does “merci” mean?",hint:"Select the English meaning",answers:["Good morning","Please","Thank you","Excuse me"],correct:"Thank you",note:"Merci means thank you."},
+    {prompt:"Complete the phrase: “Bonjour, comment ___-vous?”",hint:"Hello, how are you?",answers:["allez","mangez","parlez","faites"],correct:"allez",note:"Comment allez-vous? is a polite way to ask how someone is."}
+  ],
+  German: [
+    {prompt:"How do you say “hello”?",hint:"Select the correct translation",answers:["Hallo","Danke","Tschüss","Bitte"],correct:"Hallo",note:"Hallo is a common German greeting."},
+    {prompt:"What do you hear?",hint:"Listen, then choose the matching phrase",type:"listen",spoken:"Das Wasser",answers:["Das Brot","Das Wasser","Die Milch","Der Kaffee"],correct:"Das Wasser",note:"Das Wasser means the water."},
+    {prompt:"Write this in German",hint:"I eat bread",type:"wordbank",bank:["Ich","esse","Brot","trinke","Wasser"],correct:"Ich esse Brot",note:"Esse is the first-person form of essen (to eat)."},
+    {prompt:"What does “danke” mean?",hint:"Select the English meaning",answers:["Good morning","Please","Thank you","Excuse me"],correct:"Thank you",note:"Danke means thank you."},
+    {prompt:"Complete the phrase: “Guten ___”",hint:"Good morning",answers:["Abend","Morgen","Nacht","Tag"],correct:"Morgen",note:"Guten Morgen is the common greeting for good morning."}
+  ],
+  Italian: [
+    {prompt:"How do you say “hello”?",hint:"Select the correct translation",answers:["Ciao","Grazie","Arrivederci","Per favore"],correct:"Ciao",note:"Ciao is an informal hello and goodbye."},
+    {prompt:"What do you hear?",hint:"Listen, then choose the matching phrase",type:"listen",spoken:"L'acqua",answers:["Il pane","L'acqua","Il latte","Il caffè"],correct:"L'acqua",note:"L'acqua means the water."},
+    {prompt:"Write this in Italian",hint:"I eat bread",type:"wordbank",bank:["Io","mangio","il","pane","bevo","acqua"],correct:"Io mangio il pane",note:"Mangio is the first-person form of mangiare (to eat)."},
+    {prompt:"What does “grazie” mean?",hint:"Select the English meaning",answers:["Good morning","Please","Thank you","Excuse me"],correct:"Thank you",note:"Grazie means thank you."},
+    {prompt:"Complete the phrase: “Buon ___”",hint:"Good morning",answers:["sera","giorno","notte","pomeriggio"],correct:"giorno",note:"Buongiorno is the common greeting for good morning."}
+  ],
+  Portuguese: [
+    {prompt:"How do you say “hello”?",hint:"Select the correct translation",answers:["Olá","Obrigado","Tchau","Por favor"],correct:"Olá",note:"Olá means hello."},
+    {prompt:"What do you hear?",hint:"Listen, then choose the matching phrase",type:"listen",spoken:"A água",answers:["O pão","A água","O leite","O café"],correct:"A água",note:"Água means water."},
+    {prompt:"Write this in Portuguese",hint:"I eat bread",type:"wordbank",bank:["Eu","como","pão","bebo","água"],correct:"Eu como pão",note:"Como is the first-person form of comer (to eat)."},
+    {prompt:"What does “obrigado” mean?",hint:"Select the English meaning",answers:["Good morning","Please","Thank you","Excuse me"],correct:"Thank you",note:"Obrigado is thank you when spoken by a man; obrigada when spoken by a woman."},
+    {prompt:"Complete the phrase: “Bom ___”",hint:"Good morning",answers:["noite","dia","tarde","amigo"],correct:"dia",note:"Bom dia is the common greeting for good morning."}
+  ],
+  Japanese: [
+    {prompt:"How do you say “hello”?",hint:"Select the correct translation",answers:["こんにちは","ありがとう","さようなら","お願いします"],correct:"こんにちは",note:"こんにちは is a common daytime greeting."},
+    {prompt:"What do you hear?",hint:"Listen, then choose the matching word",type:"listen",spoken:"水",answers:["パン","水","牛乳","コーヒー"],correct:"水",note:"水 (みず) means water."},
+    {prompt:"Build the sentence",hint:"I eat bread",type:"wordbank",bank:["私","は","パン","を","食べます","水"],correct:"私 は パン を 食べます",note:"私はパンを食べます means I eat bread."},
+    {prompt:"What does “ありがとう” mean?",hint:"Select the English meaning",answers:["Good morning","Please","Thank you","Excuse me"],correct:"Thank you",note:"ありがとう means thank you."},
+    {prompt:"Complete the greeting: “おはよう ___”",hint:"Good morning (polite)",answers:["ございます","ありがとう","さようなら","ください"],correct:"ございます",note:"おはようございます is the polite form of good morning."}
+  ]
+};
+function activeQuestions() { return questionBank[state.course] || questionBank.Spanish; }
 
-function isAnswerCorrect(question = questions[state.question]) {
+function isAnswerCorrect(question = activeQuestions()[state.question]) {
   const answer = Array.isArray(state.answer) ? state.answer.join(" ") : state.answer;
   return answer === question.correct;
 }
@@ -321,8 +359,8 @@ function profileScreen() {
 }
 
 function lessonScreen() {
-  const q = questions[state.question];
-  const percent = (state.question / questions.length) * 100;
+  const q = activeQuestions()[state.question];
+  const percent = (state.question / activeQuestions().length) * 100;
   return `
     <main class="lesson-screen">
       <header class="lesson-header">
@@ -336,7 +374,7 @@ function lessonScreen() {
         ${q.type === "listen" ? `<button class="listen-card" data-action="play-question" aria-label="Play phrase"><span>🔊</span><b>Tap to listen</b><small>Normal speed</small></button>` : ""}
         ${q.type === "wordbank" ? `<div class="wordbank-answer" aria-label="Your answer">${(Array.isArray(state.answer)?state.answer:[]).map((word,i)=>`<button class="word-chip selected" data-remove-word="${i}" ${state.checked?"disabled":""}>${word}</button>`).join("") || `<span class="word-placeholder">Tap the words below to build your answer</span>`}</div><div class="wordbank-options">${q.bank.map((word,i)=>`<button class="word-chip" data-word="${word}" data-word-index="${i}" ${(Array.isArray(state.answer)&&state.answer.includes(word)&&q.bank.filter(x=>x===word).length===1)||state.checked?"disabled":""}>${word}</button>`).join("")}</div>` : `<div class="answer-list">${q.answers.map(a=>`<button class="answer-option ${state.answer===a?"selected":""} ${state.checked&&a===q.correct?"correct":state.checked&&state.answer===a?"incorrect":""}" data-answer="${a}" ${state.checked?"disabled":""}><span class="answer-dot"></span>${a}</button>`).join("")}</div>`}
       </section>
-      ${state.checked ? `<div class="answer-feedback ${isAnswerCorrect(q)?"good":"bad"}"><div class="feedback-title">${isAnswerCorrect(q)?"Excellent!":"Correct answer: "+q.correct}</div><p>${q.note}</p><button class="primary-button" data-action="next-question">${state.question===questions.length-1?"Finish lesson":"Continue"}</button></div>` :
+      ${state.checked ? `<div class="answer-feedback ${isAnswerCorrect(q)?"good":"bad"}"><div class="feedback-title">${isAnswerCorrect(q)?"Excellent!":"Correct answer: "+q.correct}</div><p>${q.note}</p><button class="primary-button" data-action="next-question">${state.question===activeQuestions().length-1?"Finish lesson":"Continue"}</button></div>` :
         `<footer class="lesson-footer"><button class="check-button" data-action="check-answer" ${hasAnswer()?"":"disabled"}>Check</button></footer>`}
     </main>`;
 }
@@ -404,7 +442,7 @@ function overlays() {
           <div class="sheet-handle"></div><div class="sheet-art">🌟</div>
           <h2 id="sheet-title">Level ${state.selectedNode+1}</h2>
           <p>Practice greetings, introductions, and everyday phrases in this lesson.</p>
-          <div class="sheet-details"><span>⚡ 10 XP</span><span>♥ 5 hearts</span><span>⏱ 3 min</span></div>
+          <div class="sheet-details"><span>⚡ 10 XP</span><span>♥ ${state.hearts} hearts</span><span>⏱ 3 min</span></div>
           <button class="primary-button" data-action="start-lesson" ${state.hearts===0?"disabled":""}>${state.hearts===0?"No hearts available":"Start lesson"}</button>
           ${state.hearts===0?'<button class="text-button" data-action="go-shop">Get hearts in the Shop</button>':""}
           <button class="text-button" data-action="close-sheet">Not now</button>
@@ -435,7 +473,7 @@ function overlays() {
     html += `
       <div class="overlay"><section class="bottom-sheet result-sheet" role="dialog" aria-modal="true">
         <div class="result-confetti">${state.lessonFailed?"💔":"🎉"}</div><div class="eyebrow">${state.lessonFailed?"SESSION ENDED":"LESSON COMPLETE"}</div><h2>${state.lessonFailed?"Out of hearts":"Great work!"}</h2><p>${state.lessonFailed?"You ran out of hearts. Try the lesson again to keep progressing.":"You finished this practice session."}</p>
-        <div class="result-stats"><div><b>${state.lessonFailed?0:state.correct*2+4}</b><small>XP EARNED</small></div><div><b>${state.correct}/${questions.length}</b><small>ACCURACY</small></div><div><b>🔥 ${state.streak}</b><small>DAY STREAK</small></div></div>
+        <div class="result-stats"><div><b>${state.lessonFailed?0:state.correct*2+4}</b><small>XP EARNED</small></div><div><b>${state.correct}/${activeQuestions().length}</b><small>ACCURACY</small></div><div><b>🔥 ${state.streak}</b><small>DAY STREAK</small></div></div>
         <button class="primary-button" data-action="finish-lesson">Continue</button>
       </section></div>`;
   }
@@ -492,7 +530,7 @@ function startLesson() {
 
 function nextQuestion() {
   if (state.hearts === 0) { state.lessonFailed = true; state.lessonDone = true; render(); return; }
-  if (state.question === questions.length - 1) {
+  if (state.question === activeQuestions().length - 1) {
     state.lessonDone = true;
     recordPracticeDay();
     const earnedXp = (state.correct * 2 + 4) * (state.doubleXp?2:1);
@@ -565,7 +603,7 @@ function bind() {
       case "check-answer":
         if (hasAnswer()) {
           state.checked = true;
-          if (isAnswerCorrect(questions[state.question])) {
+          if (isAnswerCorrect(activeQuestions()[state.question])) {
             state.correct += 1;
             state.correctInRow += 1;
             state.questStreak = Math.max(state.questStreak, state.correctInRow);
@@ -592,7 +630,7 @@ function bind() {
       case "about": state.screen = "about"; break;
       case "back-learn": state.screen = "learn"; state.tab = "learn"; break;
       case "back-profile": state.screen = "profile"; state.tab = "profile"; break;
-      case "play-question": speakSpanish(questions[state.question].spoken || questions[state.question].correct); return;
+      case "play-question": speakSpanish(activeQuestions()[state.question].spoken || activeQuestions()[state.question].correct); return;
       case "play-word": {
         const phrase = el.closest(".word-row")?.querySelector("b")?.textContent || "Hola";
         if ("speechSynthesis" in window) {
