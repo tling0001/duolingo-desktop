@@ -256,15 +256,50 @@ function dailyRefreshLabel() {
   return `${Math.floor(minutes/60)}h ${minutes%60}m`;
 }
 
+function accountQuestList(category) {
+  const snapshot = state.accountSnapshot;
+  if (!snapshot) return [];
+  const root = snapshot.quests;
+  const raw = Array.isArray(root) ? root : (root?.quests || root?.items || root?.data?.quests || []);
+  const schemaRoot = snapshot.schema;
+  const schemas = Array.isArray(schemaRoot) ? schemaRoot : (schemaRoot?.goals || schemaRoot?.data?.goals || []);
+  const progressRoot = snapshot.progress;
+  const details = progressRoot?.goals?.details || progressRoot?.goals?.goals || progressRoot?.goals || {};
+  const rows = Array.isArray(details) ? details : Object.values(details || {});
+  const progressById = new Map(rows.filter(Boolean).map(item => [String(item.goalId || item.goal_id || ""), item]));
+  return raw.filter(q => {
+    const kind = String(q.goalCategory || q.goal_category || q.category || "").toUpperCase();
+    return category === "daily"
+      ? kind === "DAILY_QUESTS" || kind === "DAILY_QUEST"
+      : kind === "MONTHLY_CHALLENGES" || kind === "MONTHLY_CHALLENGE" || kind === "MONTHLY_GOALS";
+  }).map(q => {
+    const id = String(q.goalId || q.goal_id || "");
+    const schema = schemas.find(item => String(item.goalId || item.goal_id || "") === id) || {};
+    const progress = q.goalDetails?.progress ?? q.goal_details?.progress ?? progressById.get(id)?.progress ?? 0;
+    const target = q.questThreshold ?? q.quest_threshold ?? schema.threshold ?? 1;
+    const titleValue = schema.title?.uiString || schema.title?.ui_string || schema.title || q.title?.uiString || q.title || id || "Duolingo goal";
+    const title = typeof titleValue === "string" ? titleValue : String(titleValue);
+    const numericProgress = Number(progress) || 0;
+    const numericTarget = Math.max(1, Number(target) || 1);
+    const complete = Boolean(q.completed || String(q.questState || q.quest_state || "").toUpperCase() === "FINISHED");
+    const metric = String(schema.metric || q.goalDetails?.metric || "").toUpperCase();
+    const icon = metric.includes("XP") ? "⚡" : metric.includes("LESSON") || metric.includes("SESSION") ? "📚" : "🎯";
+    return {id, icon, title, detail: schema.category || q.goalCategory || "Duolingo quest", value: complete ? numericTarget : Math.min(numericProgress,numericTarget), goal:numericTarget, percent:complete?100:Math.min(100,numericProgress/numericTarget*100), complete};
+  });
+}
+
 function questsScreen() {
-  const quests = [
+  const localQuests = [
     {icon:"⚡",title:"Earn 20 XP",detail:"Earn XP by completing lessons",value:Math.min(state.questXp,20),goal:20},
     {icon:"🎯",title:"Get 5 in a row",detail:"Answer 5 questions correctly in a row",value:Math.min(state.questStreak,5),goal:5},
     {icon:"📚",title:"Complete 2 lessons",detail:"Finish any 2 learning sessions",value:Math.min(state.questLessons,2),goal:2},
-  ].map(q=>({...q,percent:Math.min(100,q.value/q.goal*100)}));
-  const completed = quests.filter(q=>q.value>=q.goal).length;
-  if (completed===3 && !state.questRewardClaimed) { state.gems+=40; state.questRewardClaimed=true; }
+  ].map(q=>({...q,percent:Math.min(100,q.value/q.goal*100),complete:q.value>=q.goal}));
   const daily = state.questTab === "daily";
+  const liveQuests = accountQuestList(daily ? "daily" : "monthly");
+  const quests = liveQuests.length ? liveQuests : localQuests;
+  const completed = quests.filter(q=>q.complete || q.percent===100).length;
+  if (!liveQuests.length && daily && completed===3 && !state.questRewardClaimed) { state.gems+=40; state.questRewardClaimed=true; }
+  const monthlyLessons = Math.min(state.questLessons,20);
   return `
     <main class="screen other-screen quests-screen">
       <div class="page-heading"><div class="eyebrow">YOUR GOALS</div><h1>Quests</h1><p>Little goals make big progress.</p></div>
@@ -272,15 +307,18 @@ function questsScreen() {
         <button role="tab" aria-selected="${daily}" class="${daily?"selected":""}" data-quest-tab="daily">Daily</button>
         <button role="tab" aria-selected="${!daily}" class="${!daily?"selected":""}" data-quest-tab="monthly">Monthly Challenge</button>
       </div>
+      ${liveQuests.length ? '<div class="live-data-label"><span></span> Live from your Duolingo account</div>' : ""}
       ${daily ? `
-        <section class="daily-quest-heading"><b>Daily Quests</b><span>Refreshes in ${dailyRefreshLabel()}</span></section>
-        <section class="quest-summary"><div class="quest-ring"><b>${completed}</b><small>/ 3</small></div><div><b>${completed===3?"All quests complete!":"Keep your momentum going"}</b><span>Complete all three quests for a gem reward.</span></div><span class="reward">◆ 40</span></section>
-        <section class="daily-quest-list">${quests.map(q=>`<article class="daily-quest-card ${q.percent===100?"quest-complete":""}"><div class="quest-icon">${q.icon}</div><div class="quest-info"><b>${q.title}</b><span>${q.detail}</span><div class="progress-track"><i style="width:${q.percent}%"></i></div><small>${q.value} / ${q.goal}</small></div><span class="quest-reward">${q.percent===100?"✓":"◆ 10"}</span></article>`).join("")}</section>
-        <section class="friends-quest-card"><div class="friends-quest-art">🤝</div><div><b>Friends Quest</b><p>Team up with a friend and complete a shared weekly goal.</p><small>Sign in to find friends and start a quest.</small></div></section>
+        <section class="daily-quest-heading"><b>Daily Quests</b><span>${liveQuests.length ? "Synced from account" : "Refreshes in "+dailyRefreshLabel()}</span></section>
+        <section class="quest-summary"><div class="quest-ring"><b>${completed}</b><small>/ ${quests.length}</small></div><div><b>${completed===quests.length?"All quests complete!":"Keep your momentum going"}</b><span>${liveQuests.length ? "Your live daily quest progress." : "Complete all three quests for a gem reward."}</span></div>${liveQuests.length ? "" : '<span class="reward">◆ 40</span>'}</section>
+        <section class="daily-quest-list">${quests.map(q=>`<article class="daily-quest-card ${q.percent===100?"quest-complete":""}"><div class="quest-icon">${q.icon}</div><div class="quest-info"><b>${escapeHtml(q.title)}</b><span>${escapeHtml(String(q.detail))}</span><div class="progress-track"><i style="width:${q.percent}%"></i></div><small>${q.value} / ${q.goal}</small></div><span class="quest-reward">${q.percent===100?"✓":liveQuests.length?"":"◆ 10"}</span></article>`).join("")}</section>
+        ${liveQuests.length ? "" : '<section class="friends-quest-card"><div class="friends-quest-art">🤝</div><div><b>Friends Quest</b><p>Team up with a friend and complete a shared weekly goal.</p><small>Sign in to find friends and start a quest.</small></div></section>'}
       ` : `
-        <section class="monthly-hero"><div class="monthly-art">🏅</div><div class="eyebrow">MONTHLY CHALLENGE</div><h2>Build your learning streak</h2><p>Complete lessons throughout the month to earn a special badge.</p><div class="monthly-progress"><i style="width:${Math.min(100,state.questLessons/20*100)}%"></i></div><b>${Math.min(state.questLessons,20)} / 20 lessons</b></section>
-        <section class="monthly-milestones"><h3>Milestones</h3><div><span>🌱</span><b>5 lessons</b><small>${state.questLessons>=5?"Complete":"Locked"}</small></div><div><span>⭐</span><b>10 lessons</b><small>${state.questLessons>=10?"Complete":"Locked"}</small></div><div><span>🏆</span><b>20 lessons</b><small>${state.questLessons>=20?"Complete":"Locked"}</small></div></section>
-        <p class="fine-print">Monthly challenge progress is local preview data until the authenticated goals API is mapped to the Android model.</p>
+        ${liveQuests.length ? `<section class="daily-quest-list">${quests.map(q=>`<article class="daily-quest-card ${q.percent===100?"quest-complete":""}"><div class="quest-icon">${q.icon}</div><div class="quest-info"><b>${escapeHtml(q.title)}</b><span>${escapeHtml(String(q.detail))}</span><div class="progress-track"><i style="width:${q.percent}%"></i></div><small>${q.value} / ${q.goal}</small></div><span class="quest-reward">${q.percent===100?"✓":""}</span></article>`).join("")}</section>` : `
+          <section class="monthly-hero"><div class="monthly-art">🏅</div><div class="eyebrow">MONTHLY CHALLENGE</div><h2>Build your learning streak</h2><p>Complete lessons throughout the month to earn a special badge.</p><div class="monthly-progress"><i style="width:${Math.min(100,monthlyLessons/20*100)}%"></i></div><b>${monthlyLessons} / 20 lessons</b></section>
+          <section class="monthly-milestones"><h3>Milestones</h3><div><span>🌱</span><b>5 lessons</b><small>${state.questLessons>=5?"Complete":"Locked"}</small></div><div><span>⭐</span><b>10 lessons</b><small>${state.questLessons>=10?"Complete":"Locked"}</small></div><div><span>🏆</span><b>20 lessons</b><small>${state.questLessons>=20?"Complete":"Locked"}</small></div></section>
+          <p class="fine-print">Monthly challenge progress is local preview data until the authenticated goals API returns matching Android goal categories.</p>
+        `}
       `}
     </main>`;
 }
