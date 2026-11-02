@@ -293,7 +293,8 @@ function render() {
     case "leaderboard": content = leaderboardScreen(); break;
     case "quests": content = questsScreen(); break;
     case "shop": content = shopScreen(); break;
-    case "profile": content = profileScreen(); break;\n    case "guidebook": content = guidebookScreen(); break;\n    case "about": content = aboutScreen(); break;
+    case "profile": content = profileScreen(); break;
+    case "guidebook": content = guidebookScreen(); break;\n    case "about": content = aboutScreen(); break;
     default: content = learnScreen();
   }
   app.innerHTML = `
