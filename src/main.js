@@ -26,22 +26,45 @@ const state = {
   questStreak: 0,
   questLessons: 0,
   correctInRow: 0,
+  lessonFailed: false,
+  lastPracticeDate: "",
+  questDate: "",
 };
 
 // Keep preview progress across app restarts without pretending to sync an account.
 try {
   const saved = JSON.parse(localStorage.getItem("duolingo-desktop-preview") || "null");
   if (saved && typeof saved === "object") {
-    for (const key of ["course", "courseFlag", "streak", "gems", "xp", "selectedNode", "completedLessons", "animations", "hearts", "questXp", "questStreak", "questLessons"]) {
+    for (const key of ["course", "courseFlag", "streak", "gems", "xp", "selectedNode", "completedLessons", "animations", "hearts", "questXp", "questStreak", "questLessons", "lastPracticeDate", "questDate"]) {
       if (saved[key] !== undefined) state[key] = saved[key];
     }
   }
 } catch { /* Ignore invalid or unavailable local storage. */ }
 
+const localDay = () => {
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+};
+if (state.questDate !== localDay()) {
+  state.questDate = localDay(); state.questXp = 0; state.questStreak = 0; state.questLessons = 0; state.correctInRow = 0;
+}
+function hasAnswer() { return Array.isArray(state.answer) ? state.answer.length > 0 : state.answer !== null; }
+function recordPracticeDay() {
+  const today = localDay();
+  if (state.lastPracticeDate === today) return;
+  if (state.lastPracticeDate) {
+    const previous = new Date(state.lastPracticeDate+"T00:00:00");
+    const current = new Date(today+"T00:00:00");
+    const days = Math.round((current-previous)/86400000);
+    state.streak = days === 1 ? state.streak+1 : 1;
+  }
+  state.lastPracticeDate = today;
+}
+
 function persistState() {
   try {
-    const { course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons } = state;
-    localStorage.setItem("duolingo-desktop-preview", JSON.stringify({ course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons }));
+    const { course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons, lastPracticeDate, questDate } = state;
+    localStorage.setItem("duolingo-desktop-preview", JSON.stringify({ course, courseFlag, streak, gems, xp, selectedNode, completedLessons, animations, hearts, questXp, questStreak, questLessons, lastPracticeDate, questDate }));
   } catch { /* The app remains usable when storage is unavailable. */ }
 }
 
@@ -267,7 +290,7 @@ function lessonScreen() {
         ${q.type === "wordbank" ? `<div class="wordbank-answer" aria-label="Your answer">${(Array.isArray(state.answer)?state.answer:[]).map((word,i)=>`<button class="word-chip selected" data-remove-word="${i}" ${state.checked?"disabled":""}>${word}</button>`).join("") || `<span class="word-placeholder">Tap the words below to build your answer</span>`}</div><div class="wordbank-options">${q.bank.map((word,i)=>`<button class="word-chip" data-word="${word}" data-word-index="${i}" ${(Array.isArray(state.answer)&&state.answer.includes(word)&&q.bank.filter(x=>x===word).length===1)||state.checked?"disabled":""}>${word}</button>`).join("")}</div>` : `<div class="answer-list">${q.answers.map(a=>`<button class="answer-option ${state.answer===a?"selected":""} ${state.checked&&a===q.correct?"correct":state.checked&&state.answer===a?"incorrect":""}" data-answer="${a}" ${state.checked?"disabled":""}><span class="answer-dot"></span>${a}</button>`).join("")}</div>`}
       </section>
       ${state.checked ? `<div class="answer-feedback ${isAnswerCorrect(q)?"good":"bad"}"><div class="feedback-title">${isAnswerCorrect(q)?"Excellent!":"Correct answer: "+q.correct}</div><p>${q.note}</p><button class="primary-button" data-action="next-question">${state.question===questions.length-1?"Finish lesson":"Continue"}</button></div>` :
-        `<footer class="lesson-footer"><button class="check-button" data-action="check-answer" ${state.answer===null?"disabled":""}>Check</button></footer>`}
+        `<footer class="lesson-footer"><button class="check-button" data-action="check-answer" ${hasAnswer()?"":"disabled"}>Check</button></footer>`}
     </main>`;
 }
 
@@ -308,8 +331,8 @@ function overlays() {
   if (state.lessonDone) {
     html += `
       <div class="overlay"><section class="bottom-sheet result-sheet" role="dialog" aria-modal="true">
-        <div class="result-confetti">🎉</div><div class="eyebrow">LESSON COMPLETE</div><h2>You're on a roll!</h2><p>You finished this practice session.</p>
-        <div class="result-stats"><div><b>+${state.correct*2+4}</b><small>XP EARNED</small></div><div><b>${state.correct}/5</b><small>ACCURACY</small></div><div><b>🔥 ${state.streak+1}</b><small>DAY STREAK</small></div></div>
+        <div class="result-confetti">${state.lessonFailed?"💔":"🎉"}</div><div class="eyebrow">${state.lessonFailed?"SESSION ENDED":"LESSON COMPLETE"}</div><h2>${state.lessonFailed?"Out of hearts":"Great work!"}</h2><p>${state.lessonFailed?"You ran out of hearts. Try the lesson again to keep progressing.":"You finished this practice session."}</p>
+        <div class="result-stats"><div><b>${state.lessonFailed?0:state.correct*2+4}</b><small>XP EARNED</small></div><div><b>${state.correct}/${questions.length}</b><small>ACCURACY</small></div><div><b>🔥 ${state.streak}</b><small>DAY STREAK</small></div></div>
         <button class="primary-button" data-action="finish-lesson">Continue</button>
       </section></div>`;
   }
@@ -359,14 +382,16 @@ function startLesson() {
   state.checked = false;
   state.correct = 0;
   state.hearts = 5;
+  state.lessonFailed = false;
   state.lessonDone = false;
   render();
 }
 
 function nextQuestion() {
+  if (state.hearts === 0) { state.lessonFailed = true; state.lessonDone = true; render(); return; }
   if (state.question === questions.length - 1) {
     state.lessonDone = true;
-    state.streak += 1;
+    recordPracticeDay();
     const earnedXp = state.correct * 2 + 4;
     state.xp += earnedXp;
     state.questXp += earnedXp;
@@ -418,7 +443,7 @@ function bind() {
       case "toggle-animations": state.animations = !state.animations; break;
       case "start-lesson": startLesson(); return;
       case "check-answer":
-        if (state.answer !== null) {
+        if (hasAnswer()) {
           state.checked = true;
           if (isAnswerCorrect(questions[state.question])) {
             state.correct += 1;
@@ -435,7 +460,7 @@ function bind() {
         if (window.confirm("Leave this lesson? Your local practice progress will be lost.")) { state.screen = "learn"; state.tab = "learn"; state.answer = null; state.checked = false; }
         break;
       case "finish-lesson":
-        state.lessonDone = false; state.screen = "learn"; state.tab = "learn"; state.answer = null; state.checked = false; state.completedLessons = Math.min(6, state.completedLessons + 1); state.selectedNode = state.completedLessons;
+        state.lessonDone = false; state.screen = "learn"; state.tab = "learn"; state.answer = null; state.checked = false; if (!state.lessonFailed) { state.completedLessons = Math.min(6, state.completedLessons + 1); state.selectedNode = state.completedLessons; } state.lessonFailed = false;
         break;
       case "jump-current": app.querySelector("[data-node=\"2\"]")?.scrollIntoView({behavior:"smooth",block:"center"}); return;
       case "streak": state.screen = "profile"; state.tab = "profile"; break;
