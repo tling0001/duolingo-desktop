@@ -167,6 +167,33 @@ function shopScreen() {
     </main>`;
 }
 
+function guidebookScreen() {
+  const words = [["Hola","Hello"],["Buenos días","Good morning"],["Buenas tardes","Good afternoon"],["Buenas noches","Good evening"],["¿Cómo estás?","How are you?"],["Me llamo…","My name is…"]];
+  return `
+    <main class="screen other-screen">
+      <div class="page-heading">
+        <button class="back-link" data-action="back-learn">‹ <span>Back to learning path</span></button>
+        <div class="eyebrow">SECTION 1 · UNIT 1</div><h1>Say hello</h1><p>Key words and grammar for this unit.</p>
+      </div>
+      <section class="panel guidebook-intro"><span>📖</span><div><b>What you'll learn</b><p>Greet people, ask how someone is, and introduce yourself in Spanish.</p></div></section>
+      <section class="panel">
+        <div class="panel-title"><b>Key phrases</b><span>6 phrases</span></div>
+        ${words.map(w=>`<div class="word-row"><b>${w[0]}</b><span>${w[1]}</span><button data-action="play-word" aria-label="Hear ${w[0]}">🔊</button></div>`).join("")}
+      </section>
+      <section class="panel guide-tip"><b>💡 Quick tip</b><p>In Spanish, the letter “h” is silent. Hola is pronounced “OH-lah”.</p></section>
+      <p class="fine-print">This guidebook is a local sample based on the selected preview unit.</p>
+    </main>`;
+}
+
+function aboutScreen() {
+  return `
+    <main class="screen other-screen">
+      <div class="page-heading"><button class="back-link" data-action="back-profile">‹ <span>Back to profile</span></button><div class="eyebrow">ABOUT</div><h1>Duolingo Desktop</h1><p>Desktop learning experience inspired by Duolingo for Android.</p></div>
+      <section class="panel about-card"><div class="about-owl">🦉</div><b>Duolingo Desktop</b><span>Version 0.1.0 · Tauri 2</span><p>This independent desktop client is under active development. The current screens use local sample data and do not sync with a Duolingo account.</p></section>
+      <section class="panel profile-menu"><button data-action="back-learn"><span>🏠</span> Learning path <b>›</b></button><button data-action="settings"><span>⚙️</span> Settings <b>›</b></button></section>
+    </main>`;
+}
+
 function profileScreen() {
   return `
     <main class="screen other-screen">
@@ -265,7 +292,7 @@ function render() {
     case "leaderboard": content = leaderboardScreen(); break;
     case "quests": content = questsScreen(); break;
     case "shop": content = shopScreen(); break;
-    case "profile": content = profileScreen(); break;
+    case "profile": content = profileScreen(); break;\n    case "guidebook": content = guidebookScreen(); break;\n    case "about": content = aboutScreen(); break;
     default: content = learnScreen();
   }
   app.innerHTML = `
@@ -332,7 +359,7 @@ function bind() {
       case "close-course": state.coursePicker = false; break;
       case "dismiss-overlay": state.sheet = false; state.coursePicker = false; state.settings = false; break;
       case "close-sheet": state.sheet = false; break;
-      case "guidebook": state.settings = false; state.sheet = false; window.alert("The guidebook contains grammar tips and key phrases for each unit. Full course content will be connected in a later integration stage."); return;
+      case "guidebook": state.settings = false; state.sheet = false; state.screen = "guidebook"; break;
       case "settings": state.settings = true; break;
       case "close-settings": state.settings = false; break;
       case "toggle-sound": state.sound = !state.sound; break;
@@ -353,7 +380,7 @@ function bind() {
       case "earn-gems": window.alert("Gems are earned by completing lessons and quests in Duolingo. This preview does not connect to an account."); return;
       case "buy-freeze": case "buy-double": case "buy-hearts":
         window.alert("Purchases are disabled in this local preview. No gems have been spent."); return;
-      case "about": window.alert("Duolingo Desktop is an independent Tauri desktop client project."); return;
+      case "about": state.screen = "about"; break;\n      case "back-learn": state.screen = "learn"; state.tab = "learn"; break;\n      case "back-profile": state.screen = "profile"; state.tab = "profile"; break;\n      case "play-word": window.alert("Audio playback will be added with the lesson audio integration."); return;
     }
     render();
   }));
