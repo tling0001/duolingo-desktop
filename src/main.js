@@ -1,4 +1,5 @@
 import "./style.css";
+import { invoke } from "@tauri-apps/api/core";
 
 const app = document.querySelector("#app");
 
@@ -34,6 +35,10 @@ const state = {
   doubleXp: false,
   learnerName: "Learner",
   leagueWeekEndsAt: Date.now() + 4*86400000,
+  accountSnapshot: null,
+  accountJwt: "",
+  accountBusy: false,
+  accountError: "",
 };
 
 // Keep preview progress across app restarts without pretending to sync an account.
@@ -307,6 +312,60 @@ function lessonScreen() {
     </main>`;
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch]));
+}
+
+function accountSettingsPanel() {
+  if (state.accountSnapshot) {
+    const snapshot = state.accountSnapshot;
+    return `
+      <section class="account-connected">
+        <div class="account-status"><span class="account-check">✓</span><div><b>Connected to Duolingo</b><small>Android API · user #${snapshot.userId}</small></div></div>
+        <p>Your account data was fetched directly from Duolingo over HTTPS. The session token is held in memory only and is not written to local storage.</p>
+        <div class="account-actions"><button data-action="refresh-account" ${state.accountBusy?"disabled":""}>${state.accountBusy?"Refreshing…":"Refresh account data"}</button><button data-action="disconnect-account">Disconnect</button></div>
+        <details class="api-data"><summary>Quests response</summary><pre>${escapeHtml(JSON.stringify(snapshot.quests,null,2).slice(0,6000))}</pre></details>
+        <details class="api-data"><summary>Progress response</summary><pre>${escapeHtml(JSON.stringify(snapshot.progress,null,2).slice(0,6000))}</pre></details>
+        <details class="api-data"><summary>Schema response</summary><pre>${escapeHtml(JSON.stringify(snapshot.schema,null,2).slice(0,6000))}</pre></details>
+      </section>`;
+  }
+  return `
+    <section class="account-connect">
+      <b>Connect a Duolingo account</b>
+      <p>The supplied Android app uses a JWT in the <code>Authorization: Bearer</code> header. Paste an existing session token to test the documented read-only account endpoints. This does not ask for your password.</p>
+      <label for="duo-session-token">Duolingo session token</label>
+      <input id="duo-session-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste session JWT" />
+      ${state.accountError?`<p class="account-error">${escapeHtml(state.accountError)}</p>`:""}
+      <button class="account-connect-button" data-action="connect-account" ${state.accountBusy?"disabled":""}>${state.accountBusy?"Connecting…":"Connect account"}</button>
+      <small>Session-only connection: token is not saved and will be cleared when the app closes. Never share your token with anyone.</small>
+    </section>`;
+}
+
+async function connectAccount(refresh = false) {
+  const field = app.querySelector("#duo-session-token");
+  const jwt = refresh ? state.accountJwt : (field?.value || "").trim();
+  if (!jwt) { state.accountError = "Enter a session token first."; render(); return; }
+  state.accountBusy = true;
+  state.accountError = "";
+  render();
+  try {
+    const data = await invoke("connect_duolingo_account", {
+      jwt,
+      uiLanguage: "en",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+    });
+    state.accountJwt = jwt;
+    state.accountSnapshot = data;
+    state.accountError = "";
+  } catch (error) {
+    state.accountError = String(error);
+    if (refresh) state.accountSnapshot = null;
+  } finally {
+    state.accountBusy = false;
+    render();
+  }
+}
+
 function overlays() {
   let html = "";
   if (state.sheet) {
@@ -338,7 +397,8 @@ function overlays() {
         <div class="modal-head"><h2>Settings</h2><button data-action="close-settings" class="modal-close">×</button></div>
         <div class="setting-row"><div><b>Lesson audio</b><small>Audio playback is not integrated in this preview</small></div><span class="setting-value">Unavailable</span></div>
         <div class="setting-row"><div><b>Animations</b><small>Show learning path animations</small></div><button class="toggle ${state.animations?"on":""}" data-action="toggle-animations"></button></div>
-        <div class="setting-row"><div><b>Account</b><small>Account sign-in is not connected yet</small></div><span class="setting-value">Preview</span></div>
+        <div class="setting-row"><div><b>Account</b><small>Connect to read real account data</small></div><span class="setting-value">${state.accountSnapshot?"Connected":"Not connected"}</span></div>
+        ${accountSettingsPanel()}
       </section></div>`;
   }
   if (state.lessonDone) {
@@ -378,6 +438,7 @@ function render() {
       ${tabs()}
       ${overlays()}
     </div>`;
+  persistState();
   bind();
 }
 
@@ -466,6 +527,9 @@ function bind() {
       case "settings": state.settings = true; break;
       case "close-settings": state.settings = false; break;
       case "toggle-animations": state.animations = !state.animations; break;
+      case "connect-account": connectAccount(false); return;
+      case "refresh-account": connectAccount(true); return;
+      case "disconnect-account": state.accountJwt=""; state.accountSnapshot=null; state.accountError=""; break;
       case "start-lesson": startLesson(); return;
       case "check-answer":
         if (hasAnswer()) {
