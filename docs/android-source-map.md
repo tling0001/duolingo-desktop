@@ -40,8 +40,10 @@ The decompiled interface defpackage.kci declares the following read-only request
 | GET | /users/{userId}/quests | timezone |
 | GET | /users/{userId}/progress | ui_language, timezone |
 | GET | /users/{userId}/schema | ui_language, timezone |
+| GET | /2017-06-30/users/{userId}/energy-info | none |
+| GET | /2017-06-30/users/{userId}/xp_summaries | startDate, endDate |
 
-The desktop Tauri backend now calls those three routes over HTTPS after decoding the JWT's sub claim. It does not send lesson answers, modify progress, make purchases, or perform a password login. The token is held in frontend memory only; it is not written to local storage or a file. The user must reconnect after restarting the app.
+The desktop Tauri backend now calls these five read-only routes over HTTPS after decoding the JWT's sub claim. The energy and XP-summary paths are declared in defpackage.h2d and defpackage.qg60 / defpackage.ysb0. It does not send lesson answers, modify progress, make purchases, or perform a password login. The token is held in frontend memory only; it is not written to local storage or a file. The user must reconnect after restarting the app.
 
 ## Still unverified / not implemented
 
