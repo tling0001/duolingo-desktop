@@ -39,6 +39,8 @@ const state = {
   accountJwt: "",
   accountBusy: false,
   accountError: "",
+  loginMode: "email",
+  showDeveloperSession: false,
   questTab: "daily",
   profileTab: "achievements",
 };
@@ -424,10 +426,14 @@ function escapeHtml(value) {
 function accountSettingsPanel() {
   if (state.accountSnapshot) {
     const snapshot = state.accountSnapshot;
+    const energy = snapshot.energy || {};
+    const currentEnergy = energy.energy ?? energy.currentEnergy;
+    const maxEnergy = energy.maxEnergy ?? energy.max_energy;
     return `
       <section class="account-connected">
         <div class="account-status"><span class="account-check">✓</span><div><b>Connected to Duolingo</b><small>Android API · user #${snapshot.userId}</small></div></div>
-        <p>Your account data was fetched directly from Duolingo over HTTPS. The session token is held in memory only and is not written to local storage.</p>
+        ${currentEnergy !== undefined ? `<div class="account-energy"><b>${escapeHtml(String(currentEnergy))} / ${escapeHtml(String(maxEnergy ?? "—"))}</b><span>Account energy</span></div>` : ""}
+        <p>Read-only account data is connected. Local practice lessons do not submit answers or change your Duolingo progress.</p>
         <div class="account-actions"><button data-action="refresh-account" ${state.accountBusy?"disabled":""}>${state.accountBusy?"Refreshing…":"Refresh account data"}</button><button data-action="disconnect-account">Disconnect</button></div>
         <details class="api-data"><summary>Quests response</summary><pre>${escapeHtml(JSON.stringify(snapshot.quests,null,2).slice(0,6000))}</pre></details>
         <details class="api-data"><summary>Progress response</summary><pre>${escapeHtml(JSON.stringify(snapshot.progress,null,2).slice(0,6000))}</pre></details>
@@ -436,15 +442,44 @@ function accountSettingsPanel() {
         <details class="api-data"><summary>XP summaries response</summary><pre>${escapeHtml(JSON.stringify(snapshot.xpSummaries,null,2).slice(0,6000))}</pre></details>
       </section>`;
   }
+  const phone = state.loginMode === "phone";
   return `
-    <section class="account-connect">
-      <b>Connect a Duolingo account</b>
-      <p>The supplied Android app uses a JWT in the <code>Authorization: Bearer</code> header. Paste an existing session token to test the documented read-only account endpoints. This does not ask for your password.</p>
-      <label for="duo-session-token">Duolingo session token</label>
-      <input id="duo-session-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste session JWT" />
-      ${state.accountError?`<p class="account-error">${escapeHtml(state.accountError)}</p>`:""}
-      <button class="account-connect-button" data-action="connect-account" ${state.accountBusy?"disabled":""}>${state.accountBusy?"Connecting…":"Connect account"}</button>
-      <small>Session-only connection: token is not saved and will be cleared when the app closes. Never share your token with anyone.</small>
+    <section class="account-connect android-login">
+      <div class="login-duo-mark">🦉</div>
+      <h3>Welcome back!</h3>
+      <p>Sign in to your Duolingo account to access your learning progress.</p>
+      <div class="login-mode-tabs">
+        <button class="${!phone?"selected":""}" data-action="login-email-mode">Email</button>
+        <button class="${phone?"selected":""}" data-action="login-phone-mode">Phone</button>
+      </div>
+      ${phone ? `
+        <label for="duo-phone">Phone number</label>
+        <input id="duo-phone" type="tel" autocomplete="tel" placeholder="Phone number" />
+        <label for="duo-sms">Verification code</label>
+        <input id="duo-sms" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="SMS verification code" />
+        <button class="account-connect-button" data-action="request-phone-code" disabled>Get code · authentication not connected</button>
+      ` : `
+        <label for="duo-email">Email</label>
+        <input id="duo-email" type="email" autocomplete="username" placeholder="Email address" />
+        <label for="duo-password">Password</label>
+        <input id="duo-password" type="password" autocomplete="current-password" placeholder="Password" />
+        <button class="login-forgot" data-action="forgot-password" disabled>Forgot password?</button>
+        <button class="account-connect-button" disabled>Sign in · authentication not connected</button>
+      `}
+      <div class="login-divider"><span>OR</span></div>
+      <div class="login-provider-row">
+        <button disabled><b class="provider-google">G</b> Google</button>
+        <button disabled><b class="provider-facebook">f</b> Facebook</button>
+      </div>
+      <small class="login-notice">This mirrors the Android sign-in choices, but credential, SMS, Google and Facebook authentication are not wired yet. No password or phone data is sent or stored.</small>
+      <details class="developer-session">
+        <summary>Developer account-data connection</summary>
+        <p>The Android API read-only test can use an existing session token. This is separate from Android's normal sign-in.</p>
+        <label for="duo-session-token">Session token</label>
+        <input id="duo-session-token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste session JWT" />
+        ${state.accountError?`<p class="account-error">${escapeHtml(state.accountError)}</p>`:""}
+        <button class="account-connect-button" data-action="connect-account" ${state.accountBusy?"disabled":""}>${state.accountBusy?"Connecting…":"Connect read-only account data"}</button>
+      </details>
     </section>`;
 }
 
@@ -638,7 +673,7 @@ function bind() {
       case "settings": state.settings = true; break;
       case "close-settings": state.settings = false; break;
       case "toggle-animations": state.animations = !state.animations; break;
-      case "connect-account": connectAccount(false); return;
+      case "login-email-mode": state.loginMode="email"; break;\n      case "login-phone-mode": state.loginMode="phone"; break;\n      case "connect-account": connectAccount(false); return;
       case "refresh-account": connectAccount(true); return;
       case "disconnect-account": state.accountJwt=""; state.accountSnapshot=null; state.accountError=""; break;
       case "start-lesson": startLesson(); return;
