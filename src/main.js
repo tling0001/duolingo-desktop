@@ -294,7 +294,8 @@ function render() {
     case "quests": content = questsScreen(); break;
     case "shop": content = shopScreen(); break;
     case "profile": content = profileScreen(); break;
-    case "guidebook": content = guidebookScreen(); break;\n    case "about": content = aboutScreen(); break;
+    case "guidebook": content = guidebookScreen(); break;
+    case "about": content = aboutScreen(); break;
     default: content = learnScreen();
   }
   app.innerHTML = `
@@ -339,7 +340,10 @@ function nextQuestion() {
 }
 
 function bind() {
-  const scrollFrame = app.querySelector(".content-frame");\n  const jumpButton = app.querySelector(".path-jump");\n  if (scrollFrame && jumpButton) scrollFrame.addEventListener("scroll", () => jumpButton.classList.toggle("visible", scrollFrame.scrollTop > 160), {passive:true});\n  app.querySelectorAll("[data-tab]").forEach(el => el.addEventListener("click", () => navigate(el.dataset.tab)));
+  const scrollFrame = app.querySelector(".content-frame");
+  const jumpButton = app.querySelector(".path-jump");
+  if (scrollFrame && jumpButton) scrollFrame.addEventListener("scroll", () => jumpButton.classList.toggle("visible", scrollFrame.scrollTop > 160), {passive:true});
+  app.querySelectorAll("[data-tab]").forEach(el => el.addEventListener("click", () => navigate(el.dataset.tab)));
   app.querySelectorAll("[data-node]").forEach(el => el.addEventListener("click", () => {
     state.selectedNode = Number(el.dataset.node);
     state.sheet = true;
@@ -377,12 +381,16 @@ function bind() {
       case "finish-lesson":
         state.lessonDone = false; state.screen = "learn"; state.tab = "learn"; state.answer = null; state.checked = false; state.completedLessons = Math.min(6, state.completedLessons + 1); state.selectedNode = state.completedLessons;
         break;
-      case "jump-current": app.querySelector("[data-node=\"2\"]")?.scrollIntoView({behavior:"smooth",block:"center"}); return;\n      case "streak": state.screen = "profile"; state.tab = "profile"; break;
+      case "jump-current": app.querySelector("[data-node=\"2\"]")?.scrollIntoView({behavior:"smooth",block:"center"}); return;
+      case "streak": state.screen = "profile"; state.tab = "profile"; break;
       case "gems": state.screen = "shop"; state.tab = "shop"; break;
       case "earn-gems": window.alert("Gems are earned by completing lessons and quests in Duolingo. This preview does not connect to an account."); return;
       case "buy-freeze": case "buy-double": case "buy-hearts":
         window.alert("Purchases are disabled in this local preview. No gems have been spent."); return;
-      case "about": state.screen = "about"; break;\n      case "back-learn": state.screen = "learn"; state.tab = "learn"; break;\n      case "back-profile": state.screen = "profile"; state.tab = "profile"; break;\n      case "play-word": window.alert("Audio playback will be added with the lesson audio integration."); return;
+      case "about": state.screen = "about"; break;
+      case "back-learn": state.screen = "learn"; state.tab = "learn"; break;
+      case "back-profile": state.screen = "profile"; state.tab = "profile"; break;
+      case "play-word": window.alert("Audio playback will be added with the lesson audio integration."); return;
     }
     render();
   }));
