@@ -385,7 +385,7 @@ function introScreen() {
 }
 
 function onboardingScreen() {
-  return \`
+  return `
     <main class="onboarding-screen auth-screen-enter">
       <header class="onboarding-header"><button class="back-link" data-action="welcome-back" aria-label="Back">‹</button><div class="onboarding-progress"><i></i></div><span></span></header>
       <div class="onboarding-content">
@@ -394,11 +394,11 @@ function onboardingScreen() {
         <p>Choose from the courses listed in the Android app catalogue.</p>
         <input id="course-search" class="course-search" type="search" placeholder="Search 40 languages" aria-label="Search languages" />
         <div class="onboarding-course-list">
-          \${availableCourses.map(c=>\`<button class="onboarding-course \${state.course===c[1]?"chosen":""}" data-course="\${c[1]}" data-flag="\${c[0]}" data-language-name="\${c[1].toLowerCase()}"><span>\${c[0]}</span><b>\${c[1]}</b><i>\${state.course===c[1]?"✓":"›"}</i></button>\`).join("")}
+          ${availableCourses.map(c=>`<button class="onboarding-course ${state.course===c[1]?"chosen":""}" data-course="${c[1]}" data-flag="${c[0]}" data-language-name="${c[1].toLowerCase()}"><span>${c[0]}</span><b>${c[1]}</b><i>${state.course===c[1]?"✓":"›"}</i></button>`).join("")}
         </div>
       </div>
       <footer class="onboarding-footer"><button class="welcome-primary" data-action="continue-onboarding">CONTINUE</button><small>Course selection starts a local preview. Account course setup and live lessons are separate.</small></footer>
-    </main>\`;
+    </main>`;
 }
 function loginScreen() {
   const phone = state.loginMode === "phone";
@@ -581,9 +581,9 @@ async function loginWithEmail() {
   if(!identifier||!password){state.authError="Enter your email, phone, or username and password.";render();return;}
   state.loginBusy=true;state.authError="";render();
   try {
-    const d=new Date(), endDate=\`\${d.getFullYear()}-\${String(d.getMonth()+1).padStart(2,"0")}-\${String(d.getDate()).padStart(2,"0")}\`;
+    const d=new Date(), endDate=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     d.setDate(d.getDate()-6);
-    const startDate=\`\${d.getFullYear()}-\${String(d.getMonth()+1).padStart(2,"0")}-\${String(d.getDate()).padStart(2,"0")}\`;
+    const startDate=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     const result=await invoke("login_duolingo_email",{identifier,password,distinctId:getInstallDistinctId(),uiLanguage:"en",timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC",startDate,endDate});
     state.accountJwt=result.jwt;state.accountSnapshot=result.snapshot;state.accountError="";
     state.screen="learn";state.tab="learn";state.authError="";
