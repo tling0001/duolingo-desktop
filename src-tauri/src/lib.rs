@@ -25,11 +25,13 @@ async fn fetch_json(client:&Client,jwt:&str,path:&str,query:&[(&str,&str)])->Res
 }
 async fn fetch_account_snapshot(client:&Client,token:&str,ui_language:&str,timezone:&str,start_date:&str,end_date:&str)->Result<AccountSnapshot,String>{
  let user_id=user_id_from_jwt(token)?;
- let quests=fetch_json(client,token,&format!("/users/{user_id}/quests"),&[("timezone",timezone)]).await?;
+ // Progress is the required authentication check. Other verified read-only
+ // panels are best-effort so one unavailable panel does not reject a valid login.
  let progress=fetch_json(client,token,&format!("/users/{user_id}/progress"),&[("ui_language",ui_language),("timezone",timezone)]).await?;
- let schema=fetch_json(client,token,&format!("/users/{user_id}/schema"),&[("ui_language",ui_language),("timezone",timezone)]).await?;
- let energy=fetch_json(client,token,&format!("/2017-06-30/users/{user_id}/energy-info"),&[]).await?;
- let xp_summaries=fetch_json(client,token,&format!("/2017-06-30/users/{user_id}/xp_summaries"),&[("startDate",start_date),("endDate",end_date)]).await?;
+ let quests=fetch_json(client,token,&format!("/users/{user_id}/quests"),&[("timezone",timezone)]).await.unwrap_or(Value::Null);
+ let schema=fetch_json(client,token,&format!("/users/{user_id}/schema"),&[("ui_language",ui_language),("timezone",timezone)]).await.unwrap_or(Value::Null);
+ let energy=fetch_json(client,token,&format!("/2017-06-30/users/{user_id}/energy-info"),&[]).await.unwrap_or(Value::Null);
+ let xp_summaries=fetch_json(client,token,&format!("/2017-06-30/users/{user_id}/xp_summaries"),&[("startDate",start_date),("endDate",end_date)]).await.unwrap_or(Value::Null);
  Ok(AccountSnapshot{user_id,api_origin:API_ORIGIN,quests,progress,schema,energy,xp_summaries})
 }
 // APK confirms POST /2017-06-30/login with identifier/password/distinctId.
