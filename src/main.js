@@ -4,7 +4,11 @@ import { invoke } from "@tauri-apps/api/core";
 const app = document.querySelector("#app");
 
 const state = {
-  screen: "learn",
+  screen: "intro",
+  onboardingStep: "course",
+  loginMode: "email",
+  authError: "",
+  forgotPassword: false,
   tab: "learn",
   course: "Spanish",
   courseFlag: "🇪🇸",
@@ -39,7 +43,6 @@ const state = {
   accountJwt: "",
   accountBusy: false,
   accountError: "",
-  loginMode: "email",
   showDeveloperSession: false,
   questTab: "daily",
   profileTab: "achievements",
@@ -359,6 +362,92 @@ function guidebookScreen() {
     </main>`;
 }
 
+function introScreen() {
+  return `
+    <main class="welcome-screen">
+      <div class="welcome-art" aria-hidden="true">
+        <div class="welcome-cloud cloud-left"></div><div class="welcome-cloud cloud-right"></div>
+        <div class="welcome-duo">🦉</div>
+        <div class="welcome-spark spark-one">✦</div><div class="welcome-spark spark-two">✦</div>
+      </div>
+      <div class="welcome-brand"><span class="brand-owl">●</span><span>duolingo</span></div>
+      <p class="welcome-tagline">The free, fun, and effective way to learn a language!</p>
+      <div class="welcome-actions">
+        <button class="welcome-primary" data-action="start-learning">GET STARTED</button>
+        <button class="welcome-secondary" data-action="show-login">I ALREADY HAVE AN ACCOUNT</button>
+      </div>
+      <p class="welcome-legal">By continuing, you agree to Duolingo's Terms and Privacy Policy.</p>
+    </main>`;
+}
+
+function onboardingScreen() {
+  const courses = [["🇪🇸","Spanish","Learn Spanish"],["🇫🇷","French","Learn French"],["🇩🇪","German","Learn German"],["🇮🇹","Italian","Learn Italian"],["🇧🇷","Portuguese","Learn Portuguese"],["🇯🇵","Japanese","Learn Japanese"]];
+  return `
+    <main class="onboarding-screen">
+      <header class="onboarding-header"><button class="back-link" data-action="welcome-back">‹</button><div class="onboarding-progress"><i></i></div><span></span></header>
+      <div class="onboarding-content">
+        <div class="onboarding-duo">🦉</div>
+        <div class="eyebrow">LET'S GET STARTED</div><h1>What would you like to learn?</h1>
+        <p>Choose a course to start your learning journey.</p>
+        <div class="onboarding-course-list">
+          ${courses.map(c=>`<button class="onboarding-course ${state.course===c[1]?"chosen":""}" data-course="${c[1]}" data-flag="${c[0]}"><span>${c[0]}</span><b>${c[2]}</b><i>${state.course===c[1]?"✓":"›"}</i></button>`).join("")}
+        </div>
+      </div>
+      <footer class="onboarding-footer"><button class="welcome-primary" data-action="continue-onboarding">CONTINUE</button><small>This starts a local preview. It does not create or sign in to a Duolingo account.</small></footer>
+    </main>`;
+}
+
+function loginScreen() {
+  const phone = state.loginMode === "phone";
+  return `
+    <main class="signin-screen">
+      <header class="signin-header"><button class="back-link" data-action="welcome-back" aria-label="Back">‹</button><div class="signin-wordmark">duolingo</div><span></span></header>
+      <section class="signin-content">
+        <div class="signin-owl">🦉</div>
+        <h1>Welcome back!</h1>
+        <p>Sign in to continue learning with Duolingo.</p>
+        <div class="signin-mode-tabs">
+          <button class="${!phone?"selected":""}" data-action="login-email-mode">Email</button>
+          <button class="${phone?"selected":""}" data-action="login-phone-mode">Phone</button>
+        </div>
+        ${phone ? `
+          <label for="login-phone">Phone number</label>
+          <input id="login-phone" type="tel" autocomplete="tel" placeholder="Phone number" />
+          <label for="login-code">Verification code</label>
+          <input id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter SMS code" />
+          <p class="signin-help">Sign in with your verified phone number and SMS code.</p>
+        ` : `
+          <label for="login-identity">Email, phone, or username</label>
+          <input id="login-identity" type="text" autocomplete="username" placeholder="Email, phone, or username" />
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" autocomplete="current-password" placeholder="Password" />
+          <button class="signin-forgot" data-action="forgot-password">Forgot password?</button>
+        `}
+        ${state.authError?`<p class="signin-error" role="alert">${escapeHtml(state.authError)}</p>`:""}
+        <button class="signin-submit" data-action="login-submit">SIGN IN</button>
+        <div class="signin-divider"><span>OR</span></div>
+        <button class="signin-provider" data-action="provider-google"><span class="google-g">G</span> CONTINUE WITH GOOGLE</button>
+        <button class="signin-provider" data-action="provider-facebook"><span class="facebook-f">f</span> CONTINUE WITH FACEBOOK</button>
+        <button class="signin-provider" data-action="provider-wechat"><span class="wechat-mark">微</span> CONTINUE WITH WECHAT</button>
+        <p class="signin-footnote">New to Duolingo? <button data-action="start-learning">Get started</button></p>
+      </section>
+    </main>`;
+}
+
+function forgotPasswordScreen() {
+  return `
+    <main class="signin-screen">
+      <header class="signin-header"><button class="back-link" data-action="show-login">‹</button><div class="signin-wordmark">duolingo</div><span></span></header>
+      <section class="signin-content forgot-content">
+        <div class="signin-owl">🦉</div><h1>Forgot your password?</h1>
+        <p>Enter the email address associated with your Duolingo account.</p>
+        <label for="reset-email">Email</label><input id="reset-email" type="email" autocomplete="email" placeholder="Email address" />
+        ${state.authError?`<p class="signin-error" role="alert">${escapeHtml(state.authError)}</p>`:""}
+        <button class="signin-submit" data-action="reset-password-submit">SEND RESET LINK</button>
+      </section>
+    </main>`;
+}
+
 function aboutScreen() {
   return `
     <main class="screen other-screen">
@@ -559,6 +648,9 @@ function overlays() {
 
 function render() {
   persistState();
+  if (state.screen === "intro") { app.innerHTML = introScreen(); bind(); return; }
+  if (state.screen === "onboarding") { app.innerHTML = onboardingScreen(); bind(); return; }
+  if (state.screen === "login") { app.innerHTML = state.forgotPassword ? forgotPasswordScreen() : loginScreen(); bind(); return; }
   if (state.screen === "lesson") {
     app.innerHTML = lessonScreen() + overlays();
     bind();
@@ -673,11 +765,19 @@ function bind() {
       case "settings": state.settings = true; break;
       case "close-settings": state.settings = false; break;
       case "toggle-animations": state.animations = !state.animations; break;
-      case "login-email-mode": state.loginMode="email"; break;
-      case "login-phone-mode": state.loginMode="phone"; break;
+      case "start-learning": state.screen="onboarding"; state.forgotPassword=false; state.authError=""; break;
+      case "show-login": state.screen="login"; state.forgotPassword=false; state.authError=""; break;
+      case "welcome-back": state.screen="intro"; state.forgotPassword=false; state.authError=""; break;
+      case "continue-onboarding": state.screen="learn"; state.tab="learn"; break;
+      case "login-email-mode": state.loginMode="email"; state.authError=""; break;
+      case "login-phone-mode": state.loginMode="phone"; state.authError=""; break;
+      case "forgot-password": state.forgotPassword=true; state.authError=""; break;
+      case "login-submit": state.authError="Credential sign-in is not connected yet. Your details have not been sent. Use the separate developer account-data connection in Settings only if you already have a session token."; break;
+      case "reset-password-submit": state.authError="Password-reset delivery is not connected yet. No email has been sent."; break;
+      case "provider-google": case "provider-facebook": case "provider-wechat": state.authError="This sign-in provider is not configured in the desktop client yet."; break;
       case "connect-account": connectAccount(false); return;
       case "refresh-account": connectAccount(true); return;
-      case "disconnect-account": state.accountJwt=""; state.accountSnapshot=null; state.accountError=""; break;
+      case "disconnect-account": state.accountJwt=""; state.accountSnapshot=null; state.accountError=""; state.screen="intro"; break;
       case "start-lesson": startLesson(); return;
       case "check-answer":
         if (hasAnswer()) {
