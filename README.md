@@ -17,7 +17,7 @@ The frontend now contains a responsive app shell based on the supplied Android A
 
 The Android APK extraction supplied for this project was inspected for navigation, node geometry, quest cards, shop, league, and profile structure. See [Android source mapping](docs/android-source-map.md) for verified layout and API references.
 
-**Account connection:** Settings now accepts an existing Duolingo JWT and makes authenticated, read-only requests to the three Android routes verified in the APK (`/users/{id}/quests`, `/progress`, and `/schema`). The JWT is held in memory only. This is not a password login or a complete account sync; lesson answers, course-path loading, leagues, profile details, and purchases are not connected. The current Rive node animation is an SVG/CSS recreation, not the original Rive binary. The APK extraction contains decompiled Android classes/resources and Unity IL2CPP binaries, not the original editable Unity project or the private server implementation.
+**Account connection:** Settings accepts an existing Duolingo JWT and makes authenticated, read-only requests to five Android routes verified in the APK: quests, goals progress/schema, energy information, and seven-day XP summaries. The JWT is held in memory only. This is not a password login or a complete account sync; lesson answers, course-path loading, leagues, profile details, and purchases are not connected. The current Rive node animation is an SVG/CSS recreation, not the original Rive binary. The APK extraction contains decompiled Android classes/resources and Unity IL2CPP binaries, not the original editable Unity project or the private server implementation.
 
 ## Windows install location
 
