@@ -20,7 +20,7 @@
         "minHeight": 600,
         "resizable": true,
         "center": true,
-        "url": "https://www.duolingo.com/"
+        "url": "index.html"
       }
     ]
   },
