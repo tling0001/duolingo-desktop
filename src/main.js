@@ -67,7 +67,7 @@ if (state.questDate !== localDay()) {
   state.questDate = localDay(); state.questXp = 0; state.questStreak = 0; state.questLessons = 0; state.correctInRow = 0; state.questRewardClaimed = false;
 }
 const availableCourses = [
-["🇸🇦","Arabic","ar"],["🇨🇿","Czech","cs"],["🏴","Welsh","cy"],["🇩🇰","Danish","da"],["🇩🇪","German","de"],["🇬🇷","Greek","el"],["🇺🇸","English","en"],["🌍","Esperanto","eo"],["🇪🇸","Spanish","es"],["🇫🇮","Finnish","fi"],["🇫🇷","French","fr"],["🇮🇪","Irish","ga"],["🏴","Scottish Gaelic","gd"],["🇮🇱","Hebrew","he"],["🇮🇳","Hindi","hi"],["🇭🇹","Haitian Creole","ht"],["🇭🇺","Hungarian","hu"],["🐉","High Valyrian","hv"],["🌺","Hawaiian","hw"],["🇮🇩","Indonesian","id"],["🇮🇹","Italian","it"],["🇯🇵","Japanese","ja"],["🇰🇷","Korean","ko"],["🏛️","Latin","la"],["🇳🇱","Dutch","nl-NL"],["🇳🇴","Norwegian","no-BO"],["🏜️","Navajo","nv"],["🇵🇱","Polish","pl"],["🇧🇷","Portuguese","pt"],["🇷🇴","Romanian","ro"],["🇷🇺","Russian","ru"],["🇸🇪","Swedish","sv"],["🇰🇪","Swahili","sw"],["🇵🇭","Tagalog","tl"],["🖖","Klingon","tlh"],["🇹🇷","Turkish","tr"],["🇺🇦","Ukrainian","uk"],["🇻🇳","Vietnamese","vi"],["✡️","Yiddish","yi"],["🇨🇳","Chinese","zh-CN"],["🇿🇦","Zulu","zu"]
+["🇸🇦","Arabic","ar"],["🇨🇿","Czech","cs"],["🏴","Welsh","cy"],["🇩🇰","Danish","da"],["🇩🇪","German","de"],["🇬🇷","Greek","el"],["🇺🇸","English","en"],["🌍","Esperanto","eo"],["🇪🇸","Spanish","es"],["🇫🇮","Finnish","fi"],["🇫🇷","French","fr"],["🇮🇪","Irish","ga"],["🏴","Scottish Gaelic","gd"],["🇮🇱","Hebrew","he"],["🇮🇳","Hindi","hi"],["🇭🇹","Haitian Creole","ht"],["🇭🇺","Hungarian","hu"],["🐉","High Valyrian","hv"],["🌺","Hawaiian","hw"],["🇮🇩","Indonesian","id"],["🇮🇹","Italian","it"],["🇯🇵","Japanese","ja"],["🇰🇷","Korean","ko"],["🏛️","Latin","la"],["🇳🇱","Dutch","nl-NL"],["🇳🇴","Norwegian","no-BO"],["🏜️","Navajo","nv"],["🇵🇱","Polish","pl"],["🇧🇷","Portuguese","pt"],["🇷🇴","Romanian","ro"],["🇷🇺","Russian","ru"],["🇸🇪","Swedish","sv"],["🇰🇪","Swahili","sw"],["🖖","Klingon","tlh"],["🇹🇷","Turkish","tr"],["🇺🇦","Ukrainian","uk"],["🇻🇳","Vietnamese","vi"],["✡️","Yiddish","yi"],["🇨🇳","Chinese","zh-CN"],["🇿🇦","Zulu","zu"]
 ];
 function hasAnswer() { return Array.isArray(state.answer) ? state.answer.length > 0 : state.answer !== null; }
 function recordPracticeDay() {
@@ -397,7 +397,7 @@ function onboardingScreen() {
           ${availableCourses.map(c=>`<button class="onboarding-course ${state.course===c[1]?"chosen":""}" data-course="${c[1]}" data-flag="${c[0]}" data-language-name="${c[1].toLowerCase()}"><span>${c[0]}</span><b>${c[1]}</b><i>${state.course===c[1]?"✓":"›"}</i></button>`).join("")}
         </div>
       </div>
-      <footer class="onboarding-footer"><button class="welcome-primary" data-action="continue-onboarding">CONTINUE</button><small>Course selection starts a local preview. Account course setup and live lessons are separate.</small></footer>
+      <footer class="onboarding-footer"><button class="welcome-primary" data-action="continue-onboarding">CONTINUE</button><small>40 English-source courses from the Android catalogue. Offline sample lessons are currently available for six languages.</small></footer>
     </main>`;
 }
 function loginScreen() {
@@ -439,7 +439,7 @@ function loginScreen() {
 
 function forgotPasswordScreen() {
   return `
-    <main class="signin-screen">
+    <main class="signin-screen auth-screen-enter">
       <header class="signin-header"><button class="back-link" data-action="show-login">‹</button><div class="signin-wordmark">duolingo</div><span></span></header>
       <section class="signin-content forgot-content">
         <div class="signin-owl">🦉</div><h1>Forgot your password?</h1>
@@ -710,6 +710,10 @@ function navigate(tab) {
 }
 
 function startLesson() {
+  if (!questionBank[state.course]) {
+    window.alert("The " + state.course + " course is listed in the Android catalogue, but this desktop build does not yet have its lesson content. Offline sample lessons are currently available for Spanish, French, German, Italian, Portuguese, and Japanese.");
+    return;
+  }
   state.sheet = false;
   state.screen = "lesson";
   state.question = 0;
