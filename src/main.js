@@ -11,6 +11,7 @@ const state = {
   gems: 120,
   xp: 640,
   selectedNode: 2,
+  completedLessons: 2,
   sheet: false,
   coursePicker: false,
   settings: false,
@@ -95,14 +96,15 @@ function pathNode(node, index) {
 }
 
 function learnScreen() {
+  const progress = state.completedLessons;
   const nodes = [
-    { type:"done", side:"center" },
-    { type:"done", side:"left" },
-    { type:"active", side:"center" },
-    { type:"locked", side:"right" },
+    { type: progress > 0 ? "done" : "active", side:"center" },
+    { type: progress > 1 ? "done" : progress === 1 ? "active" : "locked", side:"left" },
+    { type: progress > 2 ? "done" : progress === 2 ? "active" : "locked", side:"center" },
+    { type: progress > 3 ? "done" : progress === 3 ? "active" : "locked", side:"right" },
     { type:"chest", side:"center" },
-    { type:"locked", side:"left" },
-    { type:"locked", side:"center" },
+    { type: progress > 4 ? "done" : progress === 4 ? "active" : "locked", side:"left" },
+    { type: progress > 5 ? "done" : progress === 5 ? "active" : "locked", side:"center" },
     { type:"legendary", side:"right" },
     { type:"locked", side:"center" },
   ];
@@ -372,7 +374,7 @@ function bind() {
         if (window.confirm("Leave this lesson? Your local practice progress will be lost.")) { state.screen = "learn"; state.tab = "learn"; state.answer = null; state.checked = false; }
         break;
       case "finish-lesson":
-        state.lessonDone = false; state.screen = "learn"; state.tab = "learn"; state.answer = null; state.checked = false; state.selectedNode = 3;
+        state.lessonDone = false; state.screen = "learn"; state.tab = "learn"; state.answer = null; state.checked = false; state.completedLessons = Math.min(6, state.completedLessons + 1); state.selectedNode = state.completedLessons;
         break;
       case "jump-current": app.querySelector("[data-node=\"2\"]")?.scrollIntoView({behavior:"smooth",block:"center"}); return;\n      case "streak": state.screen = "profile"; state.tab = "profile"; break;
       case "gems": state.screen = "shop"; state.tab = "shop"; break;
