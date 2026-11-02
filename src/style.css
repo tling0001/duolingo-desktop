@@ -219,3 +219,7 @@ button:focus-visible{outline:3px solid #1cb0f6;outline-offset:3px}
 .about-card>b{font-size:18px}
 .about-card>span{font-size:11px;color:#999;margin-top:3px}
 .about-card p{max-width:340px;font-size:11px;line-height:1.55;color:#888;margin:14px 0 0}
+
+.unit-header{position:sticky;top:0;z-index:2}
+.path-jump{position:absolute;right:20px;bottom:102px;z-index:4;width:48px;height:48px;border:0;border-radius:15px;background:#fff;color:#58b900;font-size:26px;font-weight:900;box-shadow:0 3px 0 #e3e3e3,0 6px 18px #00000018;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .18s,transform .18s}
+.path-jump.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
